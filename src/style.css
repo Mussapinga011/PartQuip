@@ -22,15 +22,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  @apply bg-gray-100 dark:bg-gray-800;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
+  @apply bg-gray-300 dark:bg-gray-600 rounded;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-gray-400 dark:bg-gray-500;
 }
 
 /* Print Styles */
@@ -48,4 +48,9 @@
     top: 0;
     width: 100%;
   }
+}
+
+/* Base Dark Mode Overrides */
+.dark body {
+  @apply bg-gray-900 text-gray-100;
 }

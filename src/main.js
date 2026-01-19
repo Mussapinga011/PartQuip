@@ -4,6 +4,7 @@ import { supabaseHelpers } from './lib/supabase.js';
 import { initDB } from './lib/db.js';
 import { initSync, stopSync } from './lib/sync.js';
 import { showToast } from './utils/helpers.js';
+import { t, setLanguage, getCurrentLang } from './lib/i18n.js';
 
 // Import components (will be created next)
 import { initDashboard } from './components/dashboard.js';
@@ -20,6 +21,28 @@ import { initImpressao } from './components/impressao.js';
 let currentUser = null;
 let currentPage = 'dashboard';
 
+// Apply translations to the UI
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const translation = t(key);
+    
+    if (el.tagName === 'INPUT' && el.type !== 'submit') {
+      el.placeholder = translation;
+    } else if (el.tagName === 'SPAN' || el.tagName === 'P' || el.tagName === 'H1' || el.tagName === 'H2' || el.tagName === 'H3' || el.tagName === 'LABEL' || el.tagName === 'BUTTON') {
+      const icon = el.querySelector('svg');
+      if (icon) {
+        const span = el.querySelector('span') || el;
+        if (span !== el) span.textContent = translation;
+      } else {
+        el.textContent = translation;
+      }
+    } else {
+      el.textContent = translation;
+    }
+  });
+}
+
 // Initialize app
 async function init() {
   try {
@@ -34,9 +57,11 @@ async function init() {
       currentUser = user;
       showApp();
       initSync();
+      applyTranslations();
       loadPage('dashboard');
     } else {
       showLogin();
+      applyTranslations();
     }
   } catch (error) {
     console.error('Initialization error:', error);
@@ -44,6 +69,38 @@ async function init() {
   } finally {
     hideLoading();
   }
+}
+
+// Theme Toggle Logic
+document.getElementById('theme-toggle')?.addEventListener('click', () => {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('partquit_theme', isDark ? 'dark' : 'light');
+  updateThemeIcons(isDark);
+});
+
+function updateThemeIcons(isDark) {
+  const lightIcon = document.getElementById('theme-icon-light');
+  const darkIcon = document.getElementById('theme-icon-dark');
+  
+  if (isDark) {
+    lightIcon?.classList.remove('hidden');
+    darkIcon?.classList.add('hidden');
+  } else {
+    lightIcon?.classList.add('hidden');
+    darkIcon?.classList.remove('hidden');
+  }
+}
+
+// Initial icon update
+updateThemeIcons(document.documentElement.classList.contains('dark'));
+
+// Language Switcher Logic
+const langSelector = document.getElementById('lang-selector');
+if (langSelector) {
+  langSelector.value = getCurrentLang();
+  langSelector.addEventListener('change', (e) => {
+    setLanguage(e.target.value);
+  });
 }
 
 // Check authentication
@@ -136,6 +193,28 @@ async function loadPage(page) {
   
   // Load page content
   const mainContent = document.getElementById('main-content');
+  
+  // Update header title/nav if needed, but components will handle their own inner contents
+  // For now, let's just ensure labels in the navbar are translated
+  document.querySelectorAll('.nav-item span').forEach(span => {
+    const pageKey = span.parentElement.dataset.page;
+    if (pageKey) {
+      // Map page names to translation keys
+      const keyMap = {
+        'dashboard': 'dashboard',
+        'pecas': 'pecas',
+        'vendas': 'vendas',
+        'abastecimento': 'abastecimento',
+        'busca-veiculo': 'veiculos',
+        'fornecedores': 'fornecedores',
+        'hierarquia': 'categorias',
+        'impressao': 'impressao',
+        'relatorios': 'relatorios'
+      };
+      span.textContent = t(keyMap[pageKey] || pageKey);
+    }
+  });
+
     switch(page) {
       case 'dashboard':
         await initDashboard(mainContent);

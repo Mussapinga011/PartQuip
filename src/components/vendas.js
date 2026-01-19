@@ -1,6 +1,7 @@
 // Vendas Component - Complete Sales Management
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, formatDate, showToast } from '../utils/helpers.js';
+import { t } from '../lib/i18n.js';
 
 export async function initVendas(container) {
   try {
@@ -10,54 +11,54 @@ export async function initVendas(container) {
     container.innerHTML = `
       <div class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Vendas</h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('vendas')}</h2>
           <div class="flex gap-2">
-            <button id="btn-nova-venda" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition hidden" title="Nova Venda">
-              Nova Venda
+            <button id="btn-nova-venda" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition hidden" title="${t('new_sale')}">
+              ${t('new_sale')}
             </button>
-            <button id="btn-ver-historico" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
+            <button id="btn-ver-historico" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
               </svg>
-              Histórico
+              ${t('history')}
             </button>
           </div>
         </div>
 
         <!-- Nova Venda View -->
-        <div id="nova-venda-view" class="bg-white rounded-lg border border-gray-200 p-6">
+        <div id="nova-venda-view" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <form id="form-venda" class="space-y-6">
             <!-- Busca de Peça -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Buscar Peça</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('search')}</label>
               <div class="relative">
                 <input 
                   type="text" 
                   id="busca-peca-venda" 
-                  placeholder="Digite o código ou nome da peça..." 
+                  placeholder="${t('search')}..." 
                   autocomplete="off"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
-                <div id="resultados-busca" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                <div id="resultados-busca" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
               </div>
             </div>
 
             <!-- Itens da Venda -->
             <div>
-              <h3 class="text-sm font-medium text-gray-700 mb-3">Itens da Venda</h3>
-              <div class="border border-gray-200 rounded-lg overflow-hidden">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">${t('recent_sales')}</h3>
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                 <table class="w-full">
-                  <thead class="bg-gray-50">
+                  <thead class="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Código</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Nome</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Preço Unit.</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Qtd</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Subtotal</th>
-                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-700">Ação</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('code')}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('name')}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('price')}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('quantity')}</th>
+                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('subtotal')}</th>
+                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">${t('action')}</th>
                     </tr>
                   </thead>
-                  <tbody id="itens-venda" class="divide-y divide-gray-200">
+                  <tbody id="itens-venda" class="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
                       <td colspan="6" class="px-4 py-8 text-center text-gray-400">Nenhum item adicionado</td>
                     </tr>
@@ -69,8 +70,8 @@ export async function initVendas(container) {
             <!-- Detalhes do Pagamento e Data -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento *</label>
-                <select id="pagamento-venda" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('payment_method')} *</label>
+                <select id="pagamento-venda" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                   <option value="Dinheiro">Dinheiro</option>
                   <option value="M-Pesa">M-Pesa</option>
                   <option value="E-mola">E-mola</option>
@@ -79,50 +80,49 @@ export async function initVendas(container) {
                 </select>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Data da Venda *</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('sale_date')} *</label>
                 <input 
                   type="datetime-local" 
                   id="data-venda" 
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   required
                 >
-                <p class="text-[10px] text-gray-500 mt-1">Útil para lançar vendas do caderninho</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Cliente / Veículo</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('client_vehicle')}</label>
                 <input 
                   type="text" 
                   id="cliente-venda" 
                   placeholder="Ex: Toyota Corolla 2015"
-                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 >
               </div>
             </div>
 
             <!-- Observações -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Observações</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('observations')}</label>
               <input 
                 type="text" 
                 id="obs-venda" 
-                placeholder="Observações adicionais..."
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                placeholder="${t('observations')}..."
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               >
             </div>
 
             <!-- Total e Ações -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
               <div>
-                <p class="text-sm text-gray-600">Total da Venda</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${t('total')}</p>
                 <p id="total-venda" class="text-3xl font-bold text-primary">R$ 0,00</p>
               </div>
               <div class="flex gap-3">
                 <button 
                   type="button" 
                   id="btn-limpar-venda" 
-                  class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                  class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
                 >
-                  Limpar
+                  ${t('clear')}
                 </button>
                 <button 
                   type="submit" 
@@ -133,7 +133,7 @@ export async function initVendas(container) {
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                   </svg>
-                  Finalizar Venda
+                  ${t('finish_sale')}
                 </button>
               </div>
             </div>
@@ -141,25 +141,25 @@ export async function initVendas(container) {
         </div>
 
         <!-- Historico View -->
-        <div id="historico-venda-view" class="hidden bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Histórico de Vendas</h3>
+        <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('history')}</h3>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nº Venda</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peça</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagamento</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('sale_date')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nº Venda</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Peça</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('quantity')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('total')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('payment_method')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('action')}</th>
                 </tr>
               </thead>
-              <tbody id="historico-tbody" class="bg-white divide-y divide-gray-200">
+              <tbody id="historico-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
                 <!-- Rows injected via JS -->
               </tbody>
             </table>

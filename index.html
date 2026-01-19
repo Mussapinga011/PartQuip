@@ -12,61 +12,72 @@
     <!-- PDF Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // Early theme/lang initialization to prevent flickering
+        (function() {
+            const theme = localStorage.getItem('partquit_theme') || 'light';
+            if (theme === 'dark') document.documentElement.classList.add('dark');
+            
+            const lang = localStorage.getItem('partquit_lang') || 'pt';
+            document.documentElement.lang = lang;
+        })();
+    </script>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gray-50 dark:bg-gray-900 font-sans antialiased text-gray-900 dark:text-gray-100">
     <!-- Loading Screen -->
-    <div id="loading-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center gap-6 z-50">
-        <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-gray-600 text-lg">Carregando PartQuit...</p>
+    <div id="loading-screen" class="fixed inset-0 bg-white dark:bg-gray-900 flex flex-col items-center justify-center gap-6 z-50">
+        <div class="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-gray-600 dark:text-gray-400 text-lg" data-i18n="loading">Carregando PartQuit...</p>
     </div>
 
     <!-- Login Screen -->
     <div id="login-screen" class="hidden fixed inset-0 bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-6">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <div class="text-center mb-8">
                 <svg class="w-16 h-16 mx-auto mb-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                 </svg>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">PartQuit</h1>
-                <p class="text-gray-600 text-sm">Sistema de Gestão de Peças Automotivas</p>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2" data-i18n="login_title">PartQuit</h1>
+                <p class="text-gray-600 dark:text-gray-400 text-sm" data-i18n="login_subtitle">Sistema de Gestão de Peças Automotivas</p>
             </div>
             
             <form id="login-form" class="space-y-6">
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="email">Email</label>
                     <input 
                         type="email" 
                         id="email" 
                         name="email" 
                         required 
                         autocomplete="email"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
                     >
                 </div>
                 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" data-i18n="password">Senha</label>
                     <input 
                         type="password" 
                         id="password" 
                         name="password" 
                         required 
                         autocomplete="current-password"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
                     >
                 </div>
                 
                 <button 
                     type="submit" 
                     class="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                    data-i18n="enter"
                 >
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                     </svg>
-                    Entrar
+                    <span>Entrar</span>
                 </button>
                 
-                <div id="login-error" class="hidden text-danger text-sm text-center p-3 bg-red-50 rounded-lg"></div>
+                <div id="login-error" class="hidden text-danger text-sm text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg"></div>
             </form>
         </div>
     </div>
@@ -74,20 +85,39 @@
     <!-- Main App -->
     <div id="app" class="hidden flex flex-col min-h-screen">
         <!-- Header -->
-        <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
+        <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
             <div class="flex items-center gap-4">
                 <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                 </svg>
-                <h1 class="text-xl font-bold text-gray-900">PartQuit</h1>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white">PartQuit</h1>
             </div>
             
-            <div class="flex items-center gap-6">
-                <div id="sync-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100">
-                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4 md:gap-6">
+                <!-- Theme/Lang Toggles -->
+                <div class="flex items-center gap-2 border-r border-gray-200 dark:border-gray-700 pr-4 md:pr-6">
+                    <!-- Language Selection -->
+                    <select id="lang-selector" class="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm rounded-lg focus:ring-primary focus:border-primary p-1.5 dark:text-white">
+                        <option value="pt">PT</option>
+                        <option value="en">EN</option>
+                    </select>
+
+                    <!-- Theme Toggle -->
+                    <button id="theme-toggle" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" title="Mudar Tema">
+                        <svg id="theme-icon-light" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                        </svg>
+                        <svg id="theme-icon-dark" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="sync-status" class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">
+                    <svg class="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
                     </svg>
-                    <span class="text-sm font-medium text-gray-600">Offline</span>
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400" data-i18n="offline">Offline</span>
                 </div>
                 
                 <div class="flex items-center gap-2 text-gray-600">
