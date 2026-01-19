@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PartQuit - Sistema de Gestão de Peças Automotivas">
+    <meta name="theme-color" content="#2563eb">
+    
+    <title>PartQuit - Gestão de Peças</title>
+    
+    <link rel="icon" type="image/png" href="/icon-192.png">
+    <!-- PDF Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-white flex flex-col items-center justify-center gap-6 z-50">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+        <p class="text-gray-600 text-lg">Carregando PartQuit...</p>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="hidden fixed inset-0 bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+            <div class="text-center mb-8">
+                <svg class="w-16 h-16 mx-auto mb-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">PartQuit</h1>
+                <p class="text-gray-600 text-sm">Sistema de Gestão de Peças Automotivas</p>
+            </div>
+            
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required 
+                        autocomplete="email"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                    >
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Senha</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        autocomplete="current-password"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition"
+                    >
+                </div>
+                
+                <button 
+                    type="submit" 
+                    class="w-full bg-primary hover:bg-primary-dark text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                    </svg>
+                    Entrar
+                </button>
+                
+                <div id="login-error" class="hidden text-danger text-sm text-center p-3 bg-red-50 rounded-lg"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden flex flex-col min-h-screen">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40">
+            <div class="flex items-center gap-4">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+                <h1 class="text-xl font-bold text-gray-900">PartQuit</h1>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <div id="sync-status" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100">
+                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-600">Offline</span>
+                </div>
+                
+                <div class="flex items-center gap-2 text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span id="user-name" class="text-sm font-medium">Usuário</span>
+                    <button id="logout-btn" class="ml-2 p-1.5 hover:bg-gray-100 rounded-lg transition" title="Sair">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bg-white border-b border-gray-200 px-6 flex gap-2 overflow-x-auto">
+            <button class="nav-item active flex items-center gap-2 px-4 py-3 text-sm font-medium text-primary border-b-2 border-primary whitespace-nowrap" data-page="dashboard">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="pecas">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+                <span>Peças</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="vendas">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span>Vendas</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="abastecimento">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                <span>Abastecimento</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="busca-veiculo">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <span>Veículos</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="fornecedores">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                </svg>
+                <span>Fornecedores</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="hierarquia">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+                <span>Categorias</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="impressao">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                <span>Impressão</span>
+            </button>
+            <button class="nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition" data-page="relatorios">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                <span>Relatórios</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 p-6 max-w-7xl w-full mx-auto">
+            <!-- Content will be dynamically loaded here -->
+        </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

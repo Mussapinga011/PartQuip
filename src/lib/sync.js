@@ -1,0 +1,189 @@
+// Synchronization Engine
+import { supabase, supabaseHelpers } from './supabase.js';
+import { dbOperations, syncQueue } from './db.js';
+
+let isOnline = navigator.onLine;
+let isSyncing = false;
+let syncInterval = null;
+
+// Update online status
+export function updateOnlineStatus() {
+  isOnline = navigator.onLine;
+  updateSyncStatusUI();
+  
+  if (isOnline && !isSyncing) {
+    syncData();
+  }
+}
+
+// Update sync status UI
+function updateSyncStatusUI() {
+  const statusEl = document.getElementById('sync-status');
+  if (!statusEl) return;
+
+  if (isSyncing) {
+    statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-100';
+    statusEl.innerHTML = `
+      <svg class="w-4 h-4 text-yellow-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+      </svg>
+      <span class="text-sm font-medium text-yellow-600">Sincronizando...</span>
+    `;
+  } else if (isOnline) {
+    statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-100';
+    statusEl.innerHTML = `
+      <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span class="text-sm font-medium text-green-600">Online</span>
+    `;
+  } else {
+    statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-100';
+    statusEl.innerHTML = `
+      <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+      </svg>
+      <span class="text-sm font-medium text-red-600">Offline</span>
+    `;
+  }
+}
+
+// Sync data between IndexedDB and Supabase
+export async function syncData() {
+  if (!isOnline || isSyncing) return;
+
+  isSyncing = true;
+  updateSyncStatusUI();
+
+  try {
+    // 1. Process sync queue (upload local changes)
+    const queue = await syncQueue.getAll();
+    const pending = queue.filter(item => !item.synced);
+
+    for (const item of pending) {
+      try {
+        let tableName = item.table;
+        let data = { ...item.data };
+
+        // Handle annual vendas tables mapping
+        if (tableName === 'vendas') {
+          const year = new Date(data.created_at).getFullYear() || new Date().getFullYear();
+          tableName = `vendas_${year}`;
+        }
+
+        // Handle legacy column name mapping for abastecimentos if present in queue
+        if (tableName === 'abastecimentos' && data.custo_unitario !== undefined) {
+          data.valor_unitario = data.custo_unitario;
+          delete data.custo_unitario;
+        }
+
+        // Handle legacy column name mapping for old sales items in queue
+        if (tableName.startsWith('vendas_')) {
+          if (data.cliente !== undefined) {
+            data.cliente_veiculo = data.cliente;
+            delete data.cliente;
+          }
+        }
+
+        // Remove 'total' from data if it's a generated column in Supabase (vendas, abastecimentos)
+        if (tableName.startsWith('vendas_') || tableName === 'abastecimentos') {
+          delete data.total;
+        }
+
+        switch (item.operation) {
+          case 'insert':
+            await supabaseHelpers.insert(tableName, data);
+            break;
+          case 'update':
+            await supabaseHelpers.update(tableName, data.id, data);
+            break;
+          case 'delete':
+            await supabaseHelpers.delete(tableName, data.id);
+            break;
+        }
+        await syncQueue.markSynced(item.id);
+      } catch (error) {
+        console.error('Sync error for item:', item, error);
+      }
+    }
+
+    // 2. Download remote changes
+    const tables = ['categorias', 'tipos', 'pecas', 'compatibilidade_veiculos', 
+                    'fornecedores', 'abastecimentos'];
+    
+    for (const table of tables) {
+      try {
+        const remoteData = await supabaseHelpers.getAll(table);
+        
+        // Clear local store and replace with remote data
+        await dbOperations.clear(table);
+        for (const item of remoteData) {
+          await dbOperations.add(table, item);
+        }
+      } catch (error) {
+        console.error(`Sync error for table ${table}:`, error);
+      }
+    }
+
+    // 3. Sync vendas (current year)
+    const currentYear = new Date().getFullYear();
+    const vendasTable = `vendas_${currentYear}`;
+    try {
+      const { data: vendas, error } = await supabase
+        .from(vendasTable)
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && vendas) {
+        await dbOperations.clear('vendas');
+        for (const venda of vendas) {
+          await dbOperations.add('vendas', venda);
+        }
+      }
+    } catch (error) {
+      console.error('Sync error for vendas:', error);
+    }
+
+    // 4. Clean up synced items
+    await syncQueue.clearSynced();
+
+    console.log('✅ Sync completed successfully');
+  } catch (error) {
+    console.error('Sync error:', error);
+  } finally {
+    isSyncing = false;
+    updateSyncStatusUI();
+  }
+}
+
+// Initialize sync
+export function initSync() {
+  // Listen to online/offline events
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+
+  // Initial status update
+  updateOnlineStatus();
+
+  // Periodic sync every 5 minutes when online
+  syncInterval = setInterval(() => {
+    if (isOnline && !isSyncing) {
+      syncData();
+    }
+  }, 300000);
+
+  // Initial sync
+  if (isOnline) {
+    syncData();
+  }
+}
+
+// Stop sync
+export function stopSync() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+  window.removeEventListener('online', updateOnlineStatus);
+  window.removeEventListener('offline', updateOnlineStatus);
+}
