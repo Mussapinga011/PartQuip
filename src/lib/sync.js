@@ -1,4 +1,4 @@
-// Synchronization Engine
+// Synchronization Engine - Quota-Optimized for Free Tier
 import { supabase, supabaseHelpers } from './supabase.js';
 import { dbOperations, syncQueue } from './db.js';
 import { notifySyncError } from './notifications.js';
@@ -6,6 +6,7 @@ import { notifySyncError } from './notifications.js';
 let isOnline = navigator.onLine;
 let isSyncing = false;
 let syncInterval = null;
+let realtimeActive = false; // Track if realtime is working
 
 // Update online status
 export function updateOnlineStatus() {
@@ -13,7 +14,7 @@ export function updateOnlineStatus() {
   updateSyncStatusUI();
   
   if (isOnline && !isSyncing) {
-    syncData();
+    syncData(false); // Upload only when status changes
   }
 }
 
@@ -49,17 +50,29 @@ function updateSyncStatusUI() {
   }
 }
 
+// Mark realtime as active (called from realtime.js)
+export function setRealtimeStatus(active) {
+  realtimeActive = active;
+  console.log(`📡 Realtime status: ${active ? 'ACTIVE' : 'INACTIVE'}`);
+}
+
 // Sync data between IndexedDB and Supabase
-export async function syncData() {
+// fullSync: true = download all data (quota-heavy, only on startup or reconnect)
+// fullSync: false = upload pending changes only (quota-light, frequent)
+export async function syncData(fullSync = false) {
   if (!isOnline || isSyncing) return;
 
   isSyncing = true;
   updateSyncStatusUI();
 
   try {
-    // 1. Process sync queue (upload local changes)
+    // 1. UPLOAD: Process sync queue (upload local changes) - ALWAYS DO THIS
     const queue = await syncQueue.getAll();
     const pending = queue.filter(item => !item.synced);
+
+    if (pending.length > 0) {
+      console.log(`📤 Uploading ${pending.length} pending changes...`);
+    }
 
     for (const item of pending) {
       try {
@@ -104,51 +117,64 @@ export async function syncData() {
         }
         await syncQueue.markSynced(item.id);
       } catch (error) {
-        console.error('Sync error for item:', item, error);
+        const errorMsg = error.message || (typeof error === 'string' ? error : 'Erro desconhecido');
+        console.error(`Sync error for ${item.table} (${item.operation}):`, errorMsg, error.details || '');
       }
     }
 
-    // 2. Download remote changes
-    const tables = ['categorias', 'tipos', 'pecas', 'compatibilidade_veiculos', 
-                    'fornecedores', 'abastecimentos'];
-    
-    for (const table of tables) {
+    // 2. DOWNLOAD: Full data sync - ONLY when explicitly requested
+    // This is quota-heavy, so we only do it:
+    // - On initial app load (fullSync=true from initSync)
+    // - When coming back online after being offline
+    // - When realtime connection fails
+    // During normal operation, we rely 100% on Realtime subscriptions
+    if (fullSync) {
+      console.log('📥 Performing full data download (quota-heavy operation)...');
+      
+      const tables = ['categorias', 'tipos', 'pecas', 'compatibilidade_veiculos', 
+                      'fornecedores', 'abastecimentos'];
+      
+      for (const table of tables) {
+        try {
+          const remoteData = await supabaseHelpers.getAll(table);
+          
+          // Clear local store and replace with remote data
+          await dbOperations.clear(table);
+          for (const item of remoteData) {
+            await dbOperations.add(table, item);
+          }
+        } catch (error) {
+          console.error(`Sync error for table ${table}:`, error);
+        }
+      }
+
+      // Sync vendas (current year)
+      const currentYear = new Date().getFullYear();
+      const vendasTable = `vendas_${currentYear}`;
       try {
-        const remoteData = await supabaseHelpers.getAll(table);
+        const { data: vendas, error } = await supabase
+          .from(vendasTable)
+          .select('*')
+          .order('created_at', { ascending: false });
         
-        // Clear local store and replace with remote data
-        await dbOperations.clear(table);
-        for (const item of remoteData) {
-          await dbOperations.add(table, item);
+        if (!error && vendas) {
+          await dbOperations.clear('vendas');
+          for (const venda of vendas) {
+            await dbOperations.add('vendas', venda);
+          }
         }
       } catch (error) {
-        console.error(`Sync error for table ${table}:`, error);
+        console.error('Sync error for vendas:', error);
       }
-    }
-
-    // 3. Sync vendas (current year)
-    const currentYear = new Date().getFullYear();
-    const vendasTable = `vendas_${currentYear}`;
-    try {
-      const { data: vendas, error } = await supabase
-        .from(vendasTable)
-        .select('*')
-        .order('created_at', { ascending: false });
       
-      if (!error && vendas) {
-        await dbOperations.clear('vendas');
-        for (const venda of vendas) {
-          await dbOperations.add('vendas', venda);
-        }
-      }
-    } catch (error) {
-      console.error('Sync error for vendas:', error);
+      console.log('✅ Full sync completed');
+    } else if (pending.length > 0) {
+      console.log('✅ Upload sync completed');
     }
 
-    // 4. Clean up synced items
+    // Clean up synced items
     await syncQueue.clearSynced();
 
-    console.log('✅ Sync completed successfully');
   } catch (error) {
     notifySyncError(error.message || error);
     console.error('Sync error:', error);
@@ -158,25 +184,42 @@ export async function syncData() {
   }
 }
 
-// Initialize sync
+// Initialize sync with quota-friendly strategy
 export function initSync() {
   // Listen to online/offline events
-  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('online', () => {
+    updateOnlineStatus();
+    // When coming back online, do a full sync to catch up
+    console.log('🌐 Connection restored, performing full sync...');
+    syncData(true);
+  });
+  
   window.addEventListener('offline', updateOnlineStatus);
+  
+  // Listen for manual sync triggers from db operations
+  // This only uploads changes immediately (quota-light)
+  window.addEventListener('triggerSync', () => {
+    if (isOnline && !isSyncing) {
+      syncData(false); // Upload only, no download
+    }
+  });
 
   // Initial status update
   updateOnlineStatus();
 
-  // Periodic sync every 5 minutes when online
+  // Periodic sync every 30 minutes - UPLOAD ONLY
+  // We rely on Realtime for downloads, this is just a safety net for pending uploads
+  // This is extremely quota-friendly as it only sends data, doesn't download
   syncInterval = setInterval(() => {
     if (isOnline && !isSyncing) {
-      syncData();
+      syncData(false); // Upload only, no download
     }
-  }, 300000);
+  }, 1800000); // 30 minutes
 
-  // Initial sync
+  // Initial full sync on app load (one-time quota cost)
   if (isOnline) {
-    syncData();
+    console.log('🚀 Initial app load, performing full sync...');
+    syncData(true); // Full sync on startup
   }
 }
 

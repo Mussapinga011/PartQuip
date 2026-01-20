@@ -59,6 +59,18 @@ async function init() {
         // Here we could trigger global UI refreshes if needed
         console.log(`Live Update: ${event} in ${store}`);
       });
+
+      // Listen for data changes from realtime or sync to refresh UI
+      window.addEventListener('dataChanged', (e) => {
+        const { storeName } = e.detail;
+        console.log(`Data changed in ${storeName}, refreshing current page: ${currentPage}`);
+        
+        // Refresh certain pages automatically
+        const autoRefreshPages = ['dashboard', 'pecas', 'fornecedores', 'abastecimento', 'hierarquia'];
+        if (autoRefreshPages.includes(currentPage)) {
+          loadPage(currentPage, true); // Silent refresh
+        }
+      });
       applyTranslations();
       loadPage('dashboard');
     } else {
@@ -216,7 +228,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
 });
 
 // Load page with dynamic imports (Code Splitting)
-async function loadPage(page) {
+async function loadPage(page, silent = false) {
   currentPage = page;
   
   // Update active nav item
@@ -252,12 +264,14 @@ async function loadPage(page) {
     }
   });
 
-  // Show loading indicator
-  mainContent.innerHTML = `
-    <div class="flex items-center justify-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
-  `;
+  // Show loading indicator only if not silent
+  if (!silent) {
+    mainContent.innerHTML = `
+      <div class="flex items-center justify-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    `;
+  }
 
   try {
     // Dynamic imports - only load the component when needed

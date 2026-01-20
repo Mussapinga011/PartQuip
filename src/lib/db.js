@@ -133,13 +133,18 @@ export const dbOperations = {
 // Sync queue operations
 export const syncQueue = {
   async add(operation, table, data) {
-    return dbOperations.add('sync_queue', {
+    const result = await dbOperations.add('sync_queue', {
       operation, // 'insert', 'update', 'delete'
       table,
       data,
       timestamp: new Date().toISOString(),
       synced: false
     });
+    
+    // Trigger immediate sync
+    window.dispatchEvent(new CustomEvent('triggerSync'));
+    
+    return result;
   },
 
   async getAll() {
