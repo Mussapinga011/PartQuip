@@ -163,9 +163,9 @@ O sistema funciona em modo offline-first:
 - [x] Criar componente de abastecimento (entradas)
 - [x] Implementar cancelamento de vendas
 - [x] Adicionar impressão de recibos (PDF)
-- [ ] Implementar gráficos interativos (Chart.js)
+- [x] Implementar gráficos interativos (Chart.js)
 - [x] Criar componente de hierarquia (Categoria → Tipo → Código)
-- [ ] Implementar abas anuais para vendas
+- [x] Implementar abas anuais para vendas
 
 ## 🛠️ Tecnologias
 
