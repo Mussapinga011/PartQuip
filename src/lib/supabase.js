@@ -92,6 +92,14 @@ export const supabaseHelpers = {
     if (error) throw error;
   },
 
+  async updateUserData(metadata) {
+    const { data, error } = await supabase.auth.updateUser({
+      data: metadata
+    });
+    if (error) throw error;
+    return data;
+  },
+
   // Subscribe to real-time changes
   subscribe(table, callback) {
     return supabase

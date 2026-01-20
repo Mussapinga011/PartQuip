@@ -132,7 +132,7 @@ function showApp() {
   
   // Update user name
   if (currentUser) {
-    const userName = currentUser.email.split('@')[0];
+    const userName = currentUser.user_metadata?.full_name || currentUser.email.split('@')[0];
     document.getElementById('user-name').textContent = userName;
   }
 }
@@ -172,6 +172,38 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   } catch (error) {
     console.error('Logout error:', error);
     showToast(t('logout_error') || 'Erro ao fazer logout', 'error');
+  }
+});
+
+// Profile Management
+const profileModal = document.getElementById('profile-modal');
+const profileForm = document.getElementById('profile-form');
+
+document.getElementById('settings-btn').addEventListener('click', () => {
+  if (!currentUser) return;
+  document.getElementById('profile-email').value = currentUser.email;
+  document.getElementById('profile-name').value = currentUser.user_metadata?.full_name || '';
+  profileModal.classList.remove('hidden');
+});
+
+document.getElementById('close-profile-btn').addEventListener('click', () => {
+  profileModal.classList.add('hidden');
+});
+
+profileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const newName = document.getElementById('profile-name').value;
+  
+  try {
+    await supabaseHelpers.updateUserData({ full_name: newName });
+    // Update local state
+    currentUser.user_metadata = { ...currentUser.user_metadata, full_name: newName };
+    showApp(); // Refresh header name
+    profileModal.classList.add('hidden');
+    showToast('Perfil atualizado com sucesso!', 'success');
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    showToast('Erro ao atualizar perfil', 'error');
   }
 });
 

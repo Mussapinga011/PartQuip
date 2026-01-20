@@ -174,6 +174,7 @@ export async function initVendas(container) {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('quantity')}</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('total')}</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('payment_method')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vendedor</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('action')}</th>
                 </tr>
@@ -465,6 +466,10 @@ export async function initVendas(container) {
         const sequencial = (vendasDaqueleDia.length + 1).toString().padStart(3, '0');
         const numeroVenda = `V${dataStr}${sequencial}`;
 
+        // Get current user for salesman name
+        const user = await supabaseHelpers.getCurrentUser();
+        const vendedorNome = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
+
         // Save each item as a sale
         for (const item of itensVenda) {
           const vendaData = {
@@ -477,6 +482,7 @@ export async function initVendas(container) {
             preco_unitario: item.preco_unitario,
             total: item.subtotal,
             cliente_veiculo: clienteVehiculo || null,
+            vendedor_nome: vendedorNome,
             forma_pagamento: formaPagamento,
             status: 'confirmada',
             observacoes: observacoes || null,
@@ -573,7 +579,7 @@ export async function initVendas(container) {
       filteredVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
       if (filteredVendas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">${t('no_records_year') || 'Nenhum registro encontrado para este ano.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">${t('no_records_year') || 'Nenhum registro encontrado para este ano.'}</td></tr>`;
         return;
       }
 
@@ -592,6 +598,7 @@ export async function initVendas(container) {
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${v.quantidade}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${t(v.forma_pagamento?.toLowerCase()) || v.forma_pagamento || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${v.vendedor_nome || 'Admin'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isCancelled ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'}">
                 ${isCancelled ? (t('cancelled') || 'Cancelada') : (t('confirmed') || 'Confirmada')}
