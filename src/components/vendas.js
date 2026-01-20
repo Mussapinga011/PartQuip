@@ -1,6 +1,6 @@
 // Vendas Component - Complete Sales Management
 import { dbOperations, syncQueue } from '../lib/db.js';
-import { generateId, formatCurrency, formatDate, showToast } from '../utils/helpers.js';
+import { generateId, formatCurrency, formatDate, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
 
 export async function initVendas(container) {
@@ -60,7 +60,7 @@ export async function initVendas(container) {
                   </thead>
                   <tbody id="itens-venda" class="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr>
-                      <td colspan="6" class="px-4 py-8 text-center text-gray-400">Nenhum item adicionado</td>
+                      <td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_items_added') || 'Nenhum item adicionado'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -72,11 +72,11 @@ export async function initVendas(container) {
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('payment_method')} *</label>
                 <select id="pagamento-venda" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="Dinheiro">${t('cash') || 'Dinheiro'}</option>
                   <option value="M-Pesa">M-Pesa</option>
                   <option value="E-mola">E-mola</option>
                   <option value="M-Kesh">M-Kesh</option>
-                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  <option value="Cartão de Crédito">${t('credit_card') || 'Cartão de Crédito'}</option>
                 </select>
               </div>
               <div>
@@ -111,23 +111,23 @@ export async function initVendas(container) {
             </div>
 
             <!-- Total e Ações -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-center sm:text-left">
                 <p class="text-sm text-gray-600 dark:text-gray-400">${t('total')}</p>
                 <p id="total-venda" class="text-3xl font-bold text-primary">R$ 0,00</p>
               </div>
-              <div class="flex gap-3">
+              <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button 
                   type="button" 
                   id="btn-limpar-venda" 
-                  class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+                  class="w-full sm:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
                 >
                   ${t('clear')}
                 </button>
                 <button 
                   type="submit" 
                   id="btn-finalizar-venda" 
-                  class="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition flex items-center gap-2"
+                  class="w-full sm:w-auto px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition flex items-center justify-center gap-2"
                   disabled
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,8 +142,12 @@ export async function initVendas(container) {
 
         <!-- Historico View -->
         <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('history')}</h3>
+            <!-- Year Tabs -->
+            <div id="historico-anos" class="flex flex-wrap gap-2">
+              <!-- Tabs injected via JS -->
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -172,13 +176,6 @@ export async function initVendas(container) {
     setTimeout(() => {
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      document.getElementById('data-venda').value = now.toISOString().slice(0, 16);
-    }, 100);
-
-    // Set default date to now
-    setTimeout(() => {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       const dataInput = document.getElementById('data-venda');
       if (dataInput) dataInput.value = now.toISOString().slice(0, 16);
     }, 100);
@@ -186,6 +183,7 @@ export async function initVendas(container) {
     // State
     let itensVenda = [];
     let totalVenda = 0;
+    let currentYearFilter = new Date().getFullYear();
 
     // Busca de peças
     const buscaInput = document.getElementById('busca-peca-venda');
@@ -205,23 +203,23 @@ export async function initVendas(container) {
       ).slice(0, 10);
 
       if (resultados.length === 0) {
-        resultadosDiv.innerHTML = '<div class="p-3 text-sm text-gray-500">Nenhuma peça encontrada</div>';
+        resultadosDiv.innerHTML = `<div class="p-3 text-sm text-gray-500 dark:text-gray-400">${t('no_records')}</div>`;
       } else {
         resultadosDiv.innerHTML = resultados.map(p => {
           const categoria = categorias.find(c => c.id === p.categoria_id);
           const stockBaixo = p.stock_atual < p.stock_minimo;
           
           return `
-            <div class="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0" data-peca-id="${p.id}">
+            <div class="p-3 hover:bg-gray-50 dark:hover:bg-gray-600/50 cursor-pointer border-b border-gray-100 dark:border-gray-600 last:border-0" data-peca-id="${p.id}">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-sm font-medium text-gray-900">${p.codigo} - ${p.nome}</p>
-                  <p class="text-xs text-gray-500">${categoria?.nome || 'Sem categoria'}</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">${p.codigo} - ${p.nome}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">${categoria?.nome || t('no_category') || 'Sem categoria'}</p>
                 </div>
                 <div class="text-right">
-                  <p class="text-sm font-medium text-gray-900">${formatCurrency(p.preco_venda)}</p>
-                  <p class="text-xs ${stockBaixo ? 'text-red-600' : 'text-green-600'}">
-                    Stock: ${p.stock_atual} un
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(p.preco_venda)}</p>
+                  <p class="text-xs ${stockBaixo ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                    ${t('stock')}: ${p.stock_atual} un
                   </p>
                 </div>
               </div>
@@ -258,14 +256,14 @@ export async function initVendas(container) {
       
       if (existente) {
         if (existente.quantidade >= peca.stock_atual) {
-          showToast('Stock insuficiente', 'error');
+          showToast(t('insufficient_stock') || 'Stock insuficiente', 'error');
           return;
         }
         existente.quantidade++;
         existente.subtotal = existente.quantidade * existente.preco_unitario;
       } else {
         if (peca.stock_atual === 0) {
-          showToast('Peça sem stock', 'error');
+          showToast(t('out_of_stock') || 'Peça sem stock', 'error');
           return;
         }
         
@@ -289,30 +287,30 @@ export async function initVendas(container) {
       const tbody = document.getElementById('itens-venda');
       
       if (itensVenda.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Nenhum item adicionado</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_items_added') || 'Nenhum item adicionado'}</td></tr>`;
         return;
       }
 
       tbody.innerHTML = itensVenda.map((item, index) => `
-        <tr>
-          <td class="px-4 py-2 text-sm font-medium text-gray-900">${item.codigo}</td>
-          <td class="px-4 py-2 text-sm text-gray-700">${item.nome}</td>
-          <td class="px-4 py-2 text-sm text-gray-900">${formatCurrency(item.preco_unitario)}</td>
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+          <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${item.codigo}</td>
+          <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${item.nome}</td>
+          <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">${formatCurrency(item.preco_unitario)}</td>
           <td class="px-4 py-2">
             <div class="flex items-center gap-2">
               <button 
                 type="button" 
-                class="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
+                class="w-6 h-6 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
                 onclick="window.vendaActions.decrementarQtd(${index})"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
                 </svg>
               </button>
-              <span class="w-8 text-center text-sm font-medium">${item.quantidade}</span>
+              <span class="w-8 text-center text-sm font-medium text-gray-900 dark:text-white">${item.quantidade}</span>
               <button 
                 type="button" 
-                class="w-6 h-6 flex items-center justify-center border border-gray-300 rounded hover:bg-gray-50"
+                class="w-6 h-6 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
                 onclick="window.vendaActions.incrementarQtd(${index})"
               >
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -321,14 +319,14 @@ export async function initVendas(container) {
               </button>
             </div>
           </td>
-          <td class="px-4 py-2 text-sm font-medium text-gray-900">${formatCurrency(item.subtotal)}</td>
+          <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(item.subtotal)}</td>
           <td class="px-4 py-2 text-right">
             <button 
               type="button" 
-              class="text-red-600 hover:text-red-800 text-sm"
+              class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm transition"
               onclick="window.vendaActions.removerItem(${index})"
             >
-              Remover
+              ${t('remove') || 'Remover'}
             </button>
           </td>
         </tr>
@@ -347,7 +345,7 @@ export async function initVendas(container) {
       incrementarQtd(index) {
         const item = itensVenda[index];
         if (item.quantidade >= item.stock_disponivel) {
-          showToast('Stock insuficiente', 'error');
+          showToast(t('insufficient_stock') || 'Stock insuficiente', 'error');
           return;
         }
         item.quantidade++;
@@ -390,7 +388,7 @@ export async function initVendas(container) {
       e.preventDefault();
 
       if (itensVenda.length === 0) {
-        showToast('Adicione itens à venda', 'error');
+        showToast(t('add_items_to_sale') || 'Adicione itens à venda', 'error');
         return;
       }
 
@@ -414,11 +412,14 @@ export async function initVendas(container) {
             id: generateId(),
             numero_venda: numeroVenda,
             peca_id: item.peca_id,
+            peca_codigo: item.codigo,
+            peca_nome: item.nome,
             quantidade: item.quantidade,
             preco_unitario: item.preco_unitario,
             total: item.subtotal,
             cliente_veiculo: clienteVehiculo || null,
             forma_pagamento: formaPagamento,
+            status: 'confirmada',
             observacoes: observacoes || null,
             created_at: dataVenda,
             updated_at: new Date().toISOString()
@@ -437,7 +438,7 @@ export async function initVendas(container) {
           }
         }
 
-        showToast(`Venda ${numeroVenda} finalizada com sucesso!`, 'success');
+        showToast(t('sale_finish_success')?.replace('{number}', numeroVenda) || `Venda ${numeroVenda} finalizada com sucesso!`, 'success');
         
         // Reset form
         itensVenda = [];
@@ -453,7 +454,7 @@ export async function initVendas(container) {
 
       } catch (error) {
         console.error('Error saving sale:', error);
-        showToast('Erro ao finalizar venda', 'error');
+        showToast(t('sale_finish_error') || 'Erro ao finalizar venda', 'error');
       }
     });
 
@@ -473,40 +474,73 @@ export async function initVendas(container) {
       document.getElementById('btn-ver-historico').classList.remove('hidden');
     });
 
-    // Render Historico
+    // Render Historico with Year Tabs
     async function renderHistorico() {
       const tbody = document.getElementById('historico-tbody');
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4">Carregando...</td></tr>'; // Updated colspan
+      const tabsContainer = document.getElementById('historico-anos');
+      
+      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500 dark:text-gray-400">${t('loading') || 'Carregando...'}</td></tr>`;
       
       const allVendas = await dbOperations.getAll('vendas');
-      // Sort by created_at desc
-      allVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
-      if (allVendas.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Nenhuma venda registrada</td></tr>'; // Updated colspan
+      // Calculate available years
+      const years = [...new Set(allVendas.map(v => new Date(v.created_at).getFullYear()))].sort((a, b) => b - a);
+      if (!years.includes(new Date().getFullYear())) {
+        years.unshift(new Date().getFullYear());
+      }
+
+      // Render Tabs
+      tabsContainer.innerHTML = years.map(year => `
+        <button 
+          class="year-tab px-4 py-1.5 rounded-full text-sm font-medium transition ${year === currentYearFilter ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
+          data-year="${year}"
+        >
+          ${year}
+        </button>
+      `).join('');
+
+      // Add click handlers to tabs
+      tabsContainer.querySelectorAll('.year-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentYearFilter = parseInt(btn.dataset.year);
+          renderHistorico(); // Re-render to update tabs and filtering
+        });
+      });
+
+      // Filter by selected year
+      const filteredVendas = allVendas.filter(v => new Date(v.created_at).getFullYear() === currentYearFilter);
+      
+      // Sort by created_at desc
+      filteredVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      if (filteredVendas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">${t('no_records_year') || 'Nenhum registro encontrado para este ano.'}</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = allVendas.map(v => {
+      tbody.innerHTML = filteredVendas.map(v => {
         const peca = pecas.find(p => p.id === v.peca_id);
         const isCancelled = v.status === 'cancelada';
         
         return `
-          <tr class="${isCancelled ? 'bg-red-50' : 'hover:bg-gray-50'}">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${v.numero_venda || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${peca ? peca.codigo : 'Item excluído'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${v.quantidade}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(v.total)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${v.forma_pagamento || '-'}</td>
+          <tr class="${isCancelled ? 'bg-red-50 dark:bg-red-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
+              ${v.peca_codigo || (peca ? peca.codigo : (t('item_deleted') || 'Item excluído'))} - 
+              ${v.peca_nome || (peca ? peca.nome : '')}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">${v.quantidade}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">${t(v.forma_pagamento?.toLowerCase()) || v.forma_pagamento || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
-              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isCancelled ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}">
-                ${isCancelled ? 'Cancelada' : 'Confirmada'}
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${isCancelled ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'}">
+                ${isCancelled ? (t('cancelled') || 'Cancelada') : (t('confirmed') || 'Confirmada')}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               ${!isCancelled ? `
-                <button class="text-red-600 hover:text-red-900 ml-3" onclick="window.vendaActions.cancelarVenda('${v.id}')">Cancelar</button>
+                <button class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 ml-3 transition" onclick="window.vendaActions.cancelarVenda('${v.id}')">${t('cancel') || 'Cancelar'}</button>
               ` : '-'}
             </td>
           </tr>
@@ -516,7 +550,7 @@ export async function initVendas(container) {
 
     // Add Cancel Action to Global Scope
     window.vendaActions.cancelarVenda = async (id) => {
-      if (!confirm('Tem certeza que deseja cancelar esta venda? O stock será restaurado.')) return;
+      if (!await confirm(t('confirm_cancel_sale') || 'Tem certeza que deseja cancelar esta venda? O stock será restaurado.')) return;
 
       try {
         const venda = await dbOperations.getById('vendas', id);
@@ -537,12 +571,12 @@ export async function initVendas(container) {
           await syncQueue.add('update', 'pecas', peca);
         }
 
-        showToast('Venda cancelada e stock restaurado', 'success');
+        showToast(t('sale_cancel_success') || 'Venda cancelada e stock restaurado', 'success');
         renderHistorico();
         
       } catch (error) {
         console.error('Erro ao cancelar venda:', error);
-        showToast('Erro ao cancelar venda', 'error');
+        showToast(t('sale_cancel_error') || 'Erro ao cancelar venda', 'error');
       }
     };
 

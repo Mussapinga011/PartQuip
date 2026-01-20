@@ -3,7 +3,7 @@ import './style.css';
 import { supabaseHelpers } from './lib/supabase.js';
 import { initDB } from './lib/db.js';
 import { initSync, stopSync } from './lib/sync.js';
-import { showToast } from './utils/helpers.js';
+import { showToast, confirm, showAlert } from './utils/helpers.js';
 import { t, setLanguage, getCurrentLang } from './lib/i18n.js';
 
 // Import components (will be created next)
@@ -65,7 +65,7 @@ async function init() {
     }
   } catch (error) {
     console.error('Initialization error:', error);
-    showToast('Erro ao inicializar aplicação', 'error');
+    showToast(t('init_error') || 'Erro ao inicializar aplicação', 'error');
   } finally {
     hideLoading();
   }
@@ -100,6 +100,8 @@ if (langSelector) {
   langSelector.value = getCurrentLang();
   langSelector.addEventListener('change', (e) => {
     setLanguage(e.target.value);
+    applyTranslations();
+    loadPage(currentPage); // Re-render current page with new language
   });
 }
 
@@ -148,25 +150,26 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     showApp();
     initSync();
     loadPage('dashboard');
-    showToast('Login realizado com sucesso!', 'success');
+    showToast(t('login_success') || 'Login realizado com sucesso!', 'success');
   } catch (error) {
     console.error('Login error:', error);
-    errorEl.textContent = 'Email ou senha incorretos';
+    errorEl.textContent = t('login_error_msg') || 'Email ou senha incorretos';
     errorEl.classList.remove('hidden');
   }
 });
 
 // Handle logout
 document.getElementById('logout-btn').addEventListener('click', async () => {
+  if (!await confirm(t('confirm_logout') || 'Deseja realmente sair?')) return;
   try {
     await supabaseHelpers.signOut();
     stopSync();
     currentUser = null;
     showLogin();
-    showToast('Logout realizado com sucesso', 'success');
+    showToast(t('logout_success') || 'Logout realizado com sucesso', 'success');
   } catch (error) {
     console.error('Logout error:', error);
-    showToast('Erro ao fazer logout', 'error');
+    showToast(t('logout_error') || 'Erro ao fazer logout', 'error');
   }
 });
 
@@ -187,7 +190,7 @@ async function loadPage(page) {
     if (item.dataset.page === page) {
       item.className = 'nav-item active flex items-center gap-2 px-4 py-3 text-sm font-medium text-primary border-b-2 border-primary whitespace-nowrap';
     } else {
-      item.className = 'nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 border-b-2 border-transparent hover:text-primary hover:bg-gray-50 whitespace-nowrap transition';
+      item.className = 'nav-item flex items-center gap-2 px-4 py-3 text-sm font-medium text-gray-600 dark:text-gray-400 border-b-2 border-transparent hover:text-primary dark:hover:text-primary-light hover:bg-gray-50 dark:hover:bg-gray-700/50 whitespace-nowrap transition';
     }
   });
   
@@ -244,7 +247,7 @@ async function loadPage(page) {
         await initImpressao(mainContent);
         break;
       default:
-        showToast('Página não encontrada', 'error');
+        showToast(t('page_not_found') || 'Página não encontrada', 'error');
         await initDashboard(mainContent);
     }
 }

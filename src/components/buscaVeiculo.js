@@ -1,12 +1,13 @@
-// Busca por Veículo Component - Search parts by vehicle compatibility
 import { dbOperations, syncQueue } from '../lib/db.js';
-import { formatCurrency, showToast } from '../utils/helpers.js';
+import { formatCurrency, showToast, confirm } from '../utils/helpers.js';
+import { t, getCurrentLang } from '../lib/i18n.js';
 
 export async function initBuscaVeiculo(container) {
   try {
     const compatibilidades = await dbOperations.getAll('compatibilidade_veiculos');
     const pecas = await dbOperations.getAll('pecas');
     const categorias = await dbOperations.getAll('categorias');
+    const tipos = await dbOperations.getAll('tipos');
 
     // Get unique brands and models
     const marcas = [...new Set(compatibilidades.map(c => c.marca))].sort();
@@ -14,40 +15,40 @@ export async function initBuscaVeiculo(container) {
     container.innerHTML = `
       <div class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Buscar por Veículo</h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('search_by_vehicle')}</h2>
           <button id="btn-cadastrar-compatibilidade" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            Cadastrar Compatibilidade
+            ${t('register_compatibility')}
           </button>
         </div>
 
         <!-- Search Form -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Marca</label>
-              <select id="select-marca" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                <option value="">Selecione a marca...</option>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('brand')}</label>
+              <select id="select-marca" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                <option value="">${t('select_brand')}</option>
                 ${marcas.map(m => `<option value="${m}">${m}</option>`).join('')}
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Modelo</label>
-              <select id="select-modelo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" disabled>
-                <option value="">Selecione o modelo...</option>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('model')}</label>
+              <select id="select-modelo" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" disabled>
+                <option value="">${t('select_model')}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Ano</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('years')}</label>
               <input 
                 type="number" 
                 id="input-ano" 
                 placeholder="Ex: 2015" 
                 min="1900" 
                 max="2100"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                 disabled
               >
             </div>
@@ -57,32 +58,32 @@ export async function initBuscaVeiculo(container) {
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
-              Buscar Peças
+              ${t('search_parts')}
             </button>
           </div>
         </div>
 
         <!-- Results -->
         <div id="resultados-container" class="hidden">
-          <div class="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Peças Compatíveis</h3>
+          <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('compatible_parts')}</h3>
             <div id="resultados-lista" class="space-y-3"></div>
           </div>
         </div>
 
         <!-- Histórico de Buscas -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Últimas Buscas</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('recent_searches')}</h3>
           <div id="historico-buscas" class="space-y-2">
-            <p class="text-gray-400 text-sm">Nenhuma busca realizada ainda</p>
+            <p class="text-gray-400 text-sm">${t('no_records')}</p>
           </div>
         </div>
 
         <!-- Gerenciar Compatibilidades -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Compatibilidades Cadastradas</h3>
-            <div id="pagination-info" class="text-sm text-gray-500"></div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('registered_compatibilities')}</h3>
+            <div id="pagination-info" class="text-sm text-gray-500 dark:text-gray-400"></div>
           </div>
           <div id="lista-todas-compatibilidades" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- List of all compatibilities will be rendered here -->
@@ -92,36 +93,42 @@ export async function initBuscaVeiculo(container) {
 
       <!-- Modal Cadastrar/Editar Compatibilidade -->
       <div id="modal-compatibilidade" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6" id="modal-title-compat">Cadastrar Compatibilidade</h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6" id="modal-title-compat">${t('register_compatibility')}</h3>
             <form id="form-compatibilidade" class="space-y-4">
               <input type="hidden" name="editing_id">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Marca *</label>
-                  <input type="text" name="marca" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('brand')} *</label>
+                  <input type="text" name="marca" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Modelo *</label>
-                  <input type="text" name="modelo" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('model')} *</label>
+                  <input type="text" name="modelo" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
-                <div class="col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Ano (Opcional)</label>
-                  <input type="number" name="ano" min="1900" max="2100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('years')} (${t('optional')})</label>
+                  <input type="number" name="ano" min="1900" max="2100" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div>
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('category')} *</label>
+                   <select name="categoria_id" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                     <option value="">${t('select_category')}</option>
+                     ${categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
+                   </select>
                 </div>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Códigos de Peças (separados por vírgula) *</label>
-                <textarea name="codigos" required rows="3" placeholder="Ex: AR2018, AR2917, BR3045" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
-                <p class="text-xs text-gray-500 mt-1">Dica: Você pode adicionar novos códigos a qualquer momento editando o veículo.</p>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('parts_codes')} (${t('separation_comma')}) *</label>
+                <textarea name="codigos" required rows="3" placeholder="Ex: AR2018, AR2917, BR3045" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
               </div>
-              <div class="flex gap-3 justify-end pt-4">
-                <button type="button" id="btn-cancelar-compatibilidade" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                  Cancelar
+              <div class="flex flex-col sm:flex-row gap-3 justify-end pt-4">
+                <button type="button" id="btn-cancelar-compatibilidade" class="w-full sm:w-auto px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
+                  ${t('cancel')}
                 </button>
-                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition">
-                  Salvar
+                <button type="submit" class="w-full sm:w-auto px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition">
+                  ${t('save')}
                 </button>
               </div>
             </form>
@@ -172,6 +179,7 @@ export async function initBuscaVeiculo(container) {
 
     // Buscar peças
     document.getElementById('btn-buscar-veiculo').addEventListener('click', () => {
+      const resultadosDiv = document.getElementById('resultados-lista');
       const marca = document.getElementById('select-marca').value;
       const modelo = document.getElementById('select-modelo').value;
       const ano = parseInt(document.getElementById('input-ano').value);
@@ -194,6 +202,12 @@ export async function initBuscaVeiculo(container) {
       const codigosCompativeis = compativeis.flatMap(c => c.codigos_compativeis || []);
       const pecasCompativeis = pecas.filter(p => codigosCompativeis.includes(p.codigo));
 
+      if (pecasCompativeis.length === 0) {
+        showToast(t('no_parts_in_system') || 'Códigos encontrados, mas as peças não estão cadastradas no sistema', 'warning');
+        document.getElementById('resultados-container').classList.add('hidden');
+        return;
+      }
+
       // Group by category
       const porCategoria = {};
       pecasCompativeis.forEach(p => {
@@ -204,25 +218,26 @@ export async function initBuscaVeiculo(container) {
         porCategoria[catId].push(p);
       });
 
-      // Render results
-      const resultadosDiv = document.getElementById('resultados-lista');
       resultadosDiv.innerHTML = Object.entries(porCategoria).map(([catId, pecasGrupo]) => {
         const categoria = categorias.find(c => c.id === catId);
         return `
-          <div class="border border-gray-200 rounded-lg p-4">
-            <h4 class="font-medium text-gray-900 mb-3">${categoria?.nome || 'Sem Categoria'}</h4>
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 dark:text-white mb-3">${categoria?.nome || t('no_category')}</h4>
             <div class="space-y-2">
               ${pecasGrupo.map(p => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/40 rounded-lg">
                   <div>
-                    <p class="font-medium text-gray-900">${p.codigo} - ${p.nome}</p>
-                    <p class="text-sm text-gray-600">Stock: ${p.stock_atual} un | ${formatCurrency(p.preco_venda)}</p>
+                    <p class="font-medium text-gray-900 dark:text-white">
+                      [${tipos.find(t => t.id === p.tipo_id)?.codigo || t('no_type') || 'S/T'}] 
+                      ${p.codigo} - ${p.nome}
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">${t('stock')}: ${p.stock_atual} un | ${formatCurrency(p.preco_venda)}</p>
                   </div>
                   <button 
                     class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition text-sm"
-                    onclick="alert('Funcionalidade de adicionar à venda será implementada')"
+                    onclick="window.veiculoActions.adicionarAoCarrinho('${p.id}')"
                   >
-                    Adicionar à Venda
+                    ${t('add_to_sale') || 'Adicionar à Venda'}
                   </button>
                 </div>
               `).join('')}
@@ -236,7 +251,7 @@ export async function initBuscaVeiculo(container) {
       // Add to history
       const busca = { marca, modelo, ano, timestamp: new Date().toISOString() };
       historicoBuscas.unshift(busca);
-      historicoBuscas = historicoBuscas.slice(0, 10); // Keep last 10
+      historicoBuscas = historicoBuscas.slice(0, 5); // Keep last 5
       localStorage.setItem('historico_buscas', JSON.stringify(historicoBuscas));
       renderHistorico();
     });
@@ -244,65 +259,89 @@ export async function initBuscaVeiculo(container) {
     function renderHistorico() {
       const div = document.getElementById('historico-buscas');
       if (historicoBuscas.length === 0) {
-        div.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma busca realizada ainda</p>';
+        div.innerHTML = `<p class="text-gray-400 text-sm">${t('no_records')}</p>`;
         return;
       }
 
       div.innerHTML = historicoBuscas.map(b => `
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/40 rounded-lg">
           <div>
-            <p class="text-sm font-medium text-gray-900">${b.marca} ${b.modelo} ${b.ano}</p>
-            <p class="text-xs text-gray-500">${new Date(b.timestamp).toLocaleString('pt-BR')}</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white">${b.marca} ${b.modelo} ${b.ano || ''}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">${new Date(b.timestamp).toLocaleString(getCurrentLang() === 'pt' ? 'pt-BR' : 'en-US')}</p>
           </div>
           <button 
             class="text-sm text-primary hover:text-primary-dark"
             onclick="document.getElementById('select-marca').value='${b.marca}'; document.getElementById('select-marca').dispatchEvent(new Event('change')); setTimeout(() => { document.getElementById('select-modelo').value='${b.modelo}'; document.getElementById('input-ano').value='${b.ano || ''}'; document.getElementById('btn-buscar-veiculo').disabled = false; }, 100);"
           >
-            Repetir
+            ${t('repeat')}
           </button>
         </div>
       `).join('');
     }
 
-    // Render all compatibilities
+    // Render all compatibilities grouped by vehicle
     function renderTodasCompatibilidades() {
       const div = document.getElementById('lista-todas-compatibilidades');
       if (compatibilidades.length === 0) {
         div.innerHTML = `
           <div class="col-span-full text-center py-8">
-            <p class="text-gray-400">Nenhuma compatibilidade cadastrada</p>
+            <p class="text-gray-400 dark:text-gray-500">${t('no_records')}</p>
           </div>
         `;
         return;
       }
 
-      div.innerHTML = compatibilidades.map(c => `
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-sm transition">
-          <div class="flex items-start justify-between mb-2">
-            <div>
-              <p class="font-bold text-gray-900">${c.marca} ${c.modelo}</p>
-              <p class="text-sm text-gray-600">Ano: ${c.ano || 'Universal'}</p>
-            </div>
-            <div class="flex gap-1">
-              <button class="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition btn-edit-compat" data-id="${c.id}" title="Editar">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-              </button>
-              <button class="p-1.5 text-red-600 hover:bg-red-100 rounded transition btn-delete-compat" data-id="${c.id}" title="Excluir">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-              </button>
-            </div>
+      // Grouping logic: "Brand Model Year" -> [Records]
+      const agrupado = {};
+      compatibilidades.forEach(c => {
+        const key = `${c.marca}|${c.modelo}|${c.ano || 'univ'}`;
+        if (!agrupado[key]) agrupado[key] = { 
+          marca: c.marca, 
+          modelo: c.modelo, 
+          ano: c.ano, 
+          items: [] 
+        };
+        agrupado[key].items.push(c);
+      });
+
+      div.innerHTML = Object.values(agrupado).map(veiculo => `
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden flex flex-col">
+          <div class="bg-gray-50 dark:bg-gray-900/50 p-4 border-b border-gray-200 dark:border-gray-700">
+            <h4 class="font-bold text-gray-900 dark:text-white">${veiculo.marca} ${veiculo.modelo}</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">
+              ${t('year')}: ${veiculo.ano || t('year_universal')}
+            </p>
           </div>
-          <div class="mt-2">
-            <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Peças Vinculadas:</p>
-            <div class="flex flex-wrap gap-1">
-              ${(c.codigos_compativeis || []).map(code => `
-                <span class="px-2 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-medium text-gray-700">${code}</span>
-              `).join('')}
-            </div>
+          <div class="p-4 flex-1 space-y-4">
+            ${veiculo.items.map(item => {
+              const categoria = categorias.find(cat => cat.id === item.categoria_id);
+              return `
+                <div class="group relative bg-gray-50/50 dark:bg-gray-900/30 rounded-lg p-3 border border-gray-100 dark:border-gray-800">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-primary uppercase">${categoria?.nome || t('no_category')}</span>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded btn-edit-compat" data-id="${item.id}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                      </button>
+                      <button class="p-1 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded btn-delete-compat" data-id="${item.id}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-1">
+                    ${(item.codigos_compativeis || []).map(code => `
+                      <span class="px-2 py-0.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded text-[10px] font-medium text-gray-700 dark:text-gray-300">
+                        ${code}
+                      </span>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </div>
       `).join('');
@@ -330,13 +369,14 @@ export async function initBuscaVeiculo(container) {
       form.elements['marca'].value = comp.marca;
       form.elements['modelo'].value = comp.modelo;
       form.elements['ano'].value = comp.ano || '';
+      form.elements['categoria_id'].value = comp.categoria_id || '';
       form.elements['codigos'].value = (comp.codigos_compativeis || []).join(', ');
 
       document.getElementById('modal-compatibilidade').classList.remove('hidden');
     }
 
     async function excluirCompatibilidade(id) {
-      if (!confirm('Deseja realmente excluir esta compatibilidade?')) return;
+      if (!await confirm(t('confirm_delete_compatibility') || 'Deseja realmente excluir esta compatibilidade?')) return;
 
       try {
         await dbOperations.delete('compatibilidade_veiculos', id);
@@ -374,6 +414,7 @@ export async function initBuscaVeiculo(container) {
         marca: formData.get('marca'),
         modelo: formData.get('modelo'),
         ano: formData.get('ano') ? parseInt(formData.get('ano')) : null,
+        categoria_id: formData.get('categoria_id'),
         codigos_compativeis: codigos,
         updated_at: new Date().toISOString()
       };
@@ -400,6 +441,15 @@ export async function initBuscaVeiculo(container) {
         showToast('Erro ao salvar compatibilidade', 'error');
       }
     });
+    
+    // Global actions
+    window.veiculoActions = {
+      adicionarAoCarrinho: (id) => {
+        import('../utils/helpers.js').then(m => {
+          m.showAlert(t('feature_upcoming') || 'Funcionalidade em desenvolvimento', t('upcoming') || 'Em breve');
+        });
+      }
+    };
 
   } catch (error) {
     console.error('Busca Veículo error:', error);

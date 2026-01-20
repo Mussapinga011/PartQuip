@@ -1,6 +1,7 @@
 // Hierarquia Component - Category and Type Management
 import { dbOperations, syncQueue } from '../lib/db.js';
-import { generateId, showToast } from '../utils/helpers.js';
+import { generateId, showToast, confirm } from '../utils/helpers.js';
+import { t } from '../lib/i18n.js';
 
 export async function initHierarquia(container) {
   try {
@@ -9,17 +10,17 @@ export async function initHierarquia(container) {
     
     container.innerHTML = `
       <div class="space-y-6">
-        <h2 class="text-2xl font-bold text-gray-900">Categorias e Tipos</h2>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('categories_types')}</h2>
 
         <!-- Categorias Section -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Categorias</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('categories')}</h3>
             <button id="btn-nova-categoria" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
-              Nova Categoria
+              ${t('new_category')}
             </button>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categorias-grid">
@@ -28,26 +29,26 @@ export async function initHierarquia(container) {
         </div>
 
         <!-- Tipos Section -->
-        <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Tipos</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('types')}</h3>
             <button id="btn-novo-tipo" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
               </svg>
-              Novo Tipo
+              ${t('new_type')}
             </button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Código</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-700">Categoria</th>
-                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-700">Ações</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('code')}</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('category')}</th>
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('actions')}</th>
                 </tr>
               </thead>
-              <tbody id="tipos-tbody" class="divide-y divide-gray-200">
+              <tbody id="tipos-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
                 ${renderTipos(tipos, categorias)}
               </tbody>
             </table>
@@ -57,19 +58,19 @@ export async function initHierarquia(container) {
 
       <!-- Modal Nova Categoria -->
       <div id="modal-categoria" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg max-w-md w-full p-6">
-          <h3 class="text-xl font-bold text-gray-900 mb-6">Nova Categoria</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('new_category')}</h3>
           <form id="form-categoria" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Nome *</label>
-              <input type="text" name="nome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('name')} *</label>
+              <input type="text" name="nome" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
             </div>
             <div class="flex gap-3 justify-end pt-4">
-              <button type="button" id="btn-cancelar-categoria" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                Cancelar
+              <button type="button" id="btn-cancelar-categoria" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
+                ${t('cancel')}
               </button>
               <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition">
-                Salvar
+                ${t('save')}
               </button>
             </div>
           </form>
@@ -78,26 +79,26 @@ export async function initHierarquia(container) {
 
       <!-- Modal Novo Tipo -->
       <div id="modal-tipo" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg max-w-md w-full p-6">
-          <h3 class="text-xl font-bold text-gray-900 mb-6">Novo Tipo</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('new_type')}</h3>
           <form id="form-tipo" class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-              <input type="text" name="codigo" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('code')} *</label>
+              <input type="text" name="codigo" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
-              <select name="categoria_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                <option value="">Selecione...</option>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('category')} *</label>
+              <select name="categoria_id" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                <option value="">${t('select')}</option>
                 ${categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
               </select>
             </div>
             <div class="flex gap-3 justify-end pt-4">
-              <button type="button" id="btn-cancelar-tipo" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                Cancelar
+              <button type="button" id="btn-cancelar-tipo" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
+                ${t('cancel')}
               </button>
               <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition">
-                Salvar
+                ${t('save')}
               </button>
             </div>
           </form>
@@ -217,29 +218,29 @@ export async function initHierarquia(container) {
 
 function renderCategorias(categorias, tipos) {
   if (categorias.length === 0) {
-    return '<div class="col-span-full text-center py-8 text-gray-400">Nenhuma categoria cadastrada</div>';
+    return `<div class="col-span-full text-center py-8 text-gray-400">${t('no_records')}</div>`;
   }
 
   return categorias.map(cat => {
     const tiposCount = tipos.filter(t => t.categoria_id === cat.id).length;
     return `
-      <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+      <div class="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition">
         <div class="flex items-start justify-between mb-2">
-          <h4 class="font-medium text-gray-900">${cat.nome}</h4>
+          <h4 class="font-medium text-gray-900 dark:text-white">${cat.nome}</h4>
           <div class="flex gap-1">
-            <button class="p-1 text-blue-600 hover:bg-blue-50 rounded" data-edit-categoria="${cat.id}" title="Editar">
+            <button class="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded" data-edit-categoria="${cat.id}" title="${t('edit')}">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
               </svg>
             </button>
-            <button class="p-1 text-red-600 hover:bg-red-50 rounded" data-delete-categoria="${cat.id}" title="Excluir">
+            <button class="p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded" data-delete-categoria="${cat.id}" title="${t('delete')}">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
               </svg>
             </button>
           </div>
         </div>
-        <p class="text-sm text-gray-600">${tiposCount} tipo(s)</p>
+        <p class="text-sm text-gray-600 dark:text-gray-400">${tiposCount} ${t('types_count')}</p>
       </div>
     `;
   }).join('');
@@ -247,18 +248,18 @@ function renderCategorias(categorias, tipos) {
 
 function renderTipos(tipos, categorias) {
   if (tipos.length === 0) {
-    return '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">Nenhum tipo cadastrado</td></tr>';
+    return `<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">${t('no_records')}</td></tr>`;
   }
 
   return tipos.map(tipo => {
     const categoria = categorias.find(c => c.id === tipo.categoria_id);
     return `
-      <tr>
-        <td class="px-4 py-2 text-sm font-medium">${tipo.codigo}</td>
-        <td class="px-4 py-2 text-sm">${categoria?.nome || '-'}</td>
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+        <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${tipo.codigo}</td>
+        <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${categoria?.nome || '-'}</td>
         <td class="px-4 py-2 text-sm text-right">
-          <button class="text-blue-600 hover:text-blue-800 mr-2" data-edit-tipo="${tipo.id}">Editar</button>
-          <button class="text-red-600 hover:text-red-800" data-delete-tipo="${tipo.id}">Excluir</button>
+          <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-2" data-edit-tipo="${tipo.id}">${t('edit')}</button>
+          <button class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" data-delete-tipo="${tipo.id}">${t('delete')}</button>
         </td>
       </tr>
     `;
@@ -288,7 +289,7 @@ function setupEditDeleteHandlers(container, categorias, tipos) {
       const cat = categorias.find(c => c.id === catId);
       if (!cat) return;
 
-      if (!confirm(`Tem certeza que deseja excluir a categoria "${cat.nome}"?`)) return;
+      if (!await confirm(`Tem certeza que deseja excluir a categoria "${cat.nome}"?`)) return;
 
       try {
         await dbOperations.delete('categorias', catId);
@@ -325,7 +326,7 @@ function setupEditDeleteHandlers(container, categorias, tipos) {
       const tipo = tipos.find(t => t.id === tipoId);
       if (!tipo) return;
 
-      if (!confirm(`Tem certeza que deseja excluir o tipo "${tipo.codigo}"?`)) return;
+      if (!await confirm(`Tem certeza que deseja excluir o tipo "${tipo.codigo}"?`)) return;
 
       try {
         await dbOperations.delete('tipos', tipoId);

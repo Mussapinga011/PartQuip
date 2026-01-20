@@ -1,6 +1,7 @@
 // Peças Component
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, showToast, confirm } from '../utils/helpers.js';
+import { t } from '../lib/i18n.js';
 
 export async function initPecas(container) {
   try {
@@ -12,55 +13,55 @@ export async function initPecas(container) {
     container.innerHTML = `
       <div class="space-y-6">
         <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900">Gestão de Peças</h2>
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('parts_management')}</h2>
           <button id="btn-nova-peca" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
-            Nova Peça
+            ${t('new_part')}
           </button>
         </div>
 
         <!-- Search and Filters -->
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input 
               type="text" 
               id="search-pecas" 
-              placeholder="Buscar por código ou nome..." 
-              class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="${t('search_placeholder')}" 
+              class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
             >
-            <select id="filter-categoria" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-              <option value="">Todas as categorias</option>
+            <select id="filter-categoria" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+              <option value="">${t('all_categories')}</option>
               ${categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
             </select>
-            <select id="filter-stock" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-              <option value="">Todos os stocks</option>
-              <option value="baixo">Stock baixo</option>
-              <option value="zero">Stock zero</option>
+            <select id="filter-stock" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+              <option value="">${t('all_stocks')}</option>
+              <option value="baixo">${t('low_stock_filter')}</option>
+              <option value="zero">${t('zero_stock_filter')}</option>
             </select>
-            <button id="btn-limpar-filtros" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-              Limpar Filtros
+            <button id="btn-limpar-filtros" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
+              ${t('clear_filters')}
             </button>
           </div>
         </div>
 
         <!-- Peças Table -->
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Código</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Nome</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Categoria</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Preço Venda</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Stock</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Localização</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Ações</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('code')}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('name')}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('category')}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('sale_price')}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('stock')}</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('location')}</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase">${t('actions')}</th>
                 </tr>
               </thead>
-              <tbody id="pecas-tbody" class="divide-y divide-gray-200">
+              <tbody id="pecas-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
                 ${renderPecasRows(pecas, categorias)}
               </tbody>
             </table>
@@ -70,67 +71,67 @@ export async function initPecas(container) {
 
       <!-- Modal Nova Peça -->
       <div id="modal-peca" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           <div class="p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">Nova Peça</h3>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('new_part')}</h3>
             <form id="form-peca" class="space-y-4">
-              <div class="grid grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Código *</label>
-                  <input type="text" name="codigo" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('code')} *</label>
+                  <input type="text" name="codigo" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Nome *</label>
-                  <input type="text" name="nome" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('name')} *</label>
+                  <input type="text" name="nome" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Categoria *</label>
-                  <select name="categoria_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option value="">Selecione...</option>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('category')} *</label>
+                  <select name="categoria_id" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="">${t('select')}</option>
                     ${categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                  <select name="tipo_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option value="">Selecione...</option>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('tipo') || 'Tipo'}</label>
+                  <select name="tipo_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="">${t('select')}</option>
                     ${tipos.map(t => `<option value="${t.id}">${t.codigo}</option>`).join('')}
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Preço Custo *</label>
-                  <input type="number" name="preco_custo" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('cost_price')} *</label>
+                  <input type="number" name="preco_custo" step="0.01" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Preço Venda *</label>
-                  <input type="number" name="preco_venda" step="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('sale_price')} *</label>
+                  <input type="number" name="preco_venda" step="0.01" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Stock Atual *</label>
-                  <input type="number" name="stock_atual" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('current_stock')} *</label>
+                  <input type="number" name="stock_atual" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Stock Mínimo *</label>
-                  <input type="number" name="stock_minimo" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('min_stock')} *</label>
+                  <input type="number" name="stock_minimo" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-                  <input type="text" name="localizacao" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('location')}</label>
+                  <input type="text" name="localizacao" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Fornecedor</label>
-                  <select name="fornecedor_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    <option value="">Selecione...</option>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('supplier')}</label>
+                  <select name="fornecedor_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <option value="">${t('select')}</option>
                     ${fornecedores.map(f => `<option value="${f.id}">${f.nome}</option>`).join('')}
                   </select>
                 </div>
               </div>
               <div class="flex gap-3 justify-end pt-4">
-                <button type="button" id="btn-cancelar-peca" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                  Cancelar
+                <button type="button" id="btn-cancelar-peca" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
+                  ${t('cancel')}
                 </button>
                 <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition">
-                  Salvar Peça
+                  ${t('save_part')}
                 </button>
               </div>
             </form>
@@ -148,7 +149,7 @@ export async function initPecas(container) {
       const form = document.getElementById('form-peca');
       form.reset();
       delete form.dataset.editingId;
-      document.querySelector('#modal-peca h3').textContent = 'Nova Peça';
+      document.querySelector('#modal-peca h3').textContent = t('new_part');
       document.getElementById('modal-peca').classList.add('hidden');
     });
 
@@ -180,21 +181,21 @@ export async function initPecas(container) {
         if (editingId) {
           await dbOperations.put('pecas', data);
           await syncQueue.add('update', 'pecas', data);
-          showToast('Peça atualizada com sucesso!', 'success');
+          showToast(t('update_success') || 'Peça atualizada com sucesso!', 'success');
         } else {
           await dbOperations.add('pecas', data);
           await syncQueue.add('insert', 'pecas', data);
-          showToast('Peça cadastrada com sucesso!', 'success');
+          showToast(t('save_success') || 'Peça cadastrada com sucesso!', 'success');
         }
         
         document.getElementById('modal-peca').classList.add('hidden');
         e.target.reset();
         delete e.target.dataset.editingId;
-        document.querySelector('#modal-peca h3').textContent = 'Nova Peça';
+        document.querySelector('#modal-peca h3').textContent = t('new_part');
         initPecas(container); // Reload
       } catch (error) {
         console.error('Error saving peça:', error);
-        showToast(editingId ? 'Erro ao atualizar peça' : 'Erro ao cadastrar peça', 'error');
+        showToast(editingId ? (t('update_error') || 'Erro ao atualizar peça') : (t('save_error') || 'Erro ao cadastrar peça'), 'error');
       }
     });
 
@@ -246,18 +247,18 @@ function setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedor
       const peca = pecas.find(p => p.id === pecaId);
       if (!peca) return;
 
-      if (!confirm(`Tem certeza que deseja excluir a peça "${peca.codigo} - ${peca.nome}"?`)) {
+      if (!await confirm(t('confirm_delete_part')?.replace('{name}', `${peca.codigo} - ${peca.nome}`) || `Tem certeza que deseja excluir a peça "${peca.codigo} - ${peca.nome}"?`)) {
         return;
       }
 
       try {
         await dbOperations.delete('pecas', pecaId);
         await syncQueue.add('delete', 'pecas', { id: pecaId });
-        showToast('Peça excluída com sucesso!', 'success');
+        showToast(t('delete_success') || 'Peça excluída com sucesso!', 'success');
         initPecas(container); // Reload
       } catch (error) {
         console.error('Error deleting peça:', error);
-        showToast('Erro ao excluir peça', 'error');
+        showToast(t('delete_error') || 'Erro ao excluir peça', 'error');
       }
     });
   });
@@ -265,7 +266,7 @@ function setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedor
 
 function renderPecasRows(pecas, categorias) {
   if (pecas.length === 0) {
-    return '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400">Nenhuma peça cadastrada</td></tr>';
+    return `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_records')}</td></tr>`;
   }
 
   return pecas.map(peca => {
@@ -273,20 +274,20 @@ function renderPecasRows(pecas, categorias) {
     const stockBaixo = peca.stock_atual < peca.stock_minimo;
     
     return `
-      <tr class="hover:bg-gray-50">
-        <td class="px-4 py-3 text-sm font-medium text-gray-900">${peca.codigo}</td>
-        <td class="px-4 py-3 text-sm text-gray-700">${peca.nome}</td>
-        <td class="px-4 py-3 text-sm text-gray-600">${categoria?.nome || '-'}</td>
-        <td class="px-4 py-3 text-sm text-gray-900">${formatCurrency(peca.preco_venda)}</td>
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+        <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">${peca.codigo}</td>
+        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${peca.nome}</td>
+        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">${categoria?.nome || '-'}</td>
+        <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">${formatCurrency(peca.preco_venda)}</td>
         <td class="px-4 py-3 text-sm">
-          <span class="px-2 py-1 rounded text-xs font-medium ${stockBaixo ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+          <span class="px-2 py-1 rounded text-xs font-medium ${stockBaixo ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}">
             ${peca.stock_atual} un
           </span>
         </td>
-        <td class="px-4 py-3 text-sm text-gray-600">${peca.localizacao || '-'}</td>
+        <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">${peca.localizacao || '-'}</td>
         <td class="px-4 py-3 text-sm text-right">
-          <button class="text-blue-600 hover:text-blue-800 mr-2" data-edit-peca="${peca.id}">Editar</button>
-          <button class="text-red-600 hover:text-red-800" data-delete-peca="${peca.id}">Excluir</button>
+          <button class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mr-2" data-edit-peca="${peca.id}">${t('edit')}</button>
+          <button class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300" data-delete-peca="${peca.id}">${t('delete')}</button>
         </td>
       </tr>
     `;

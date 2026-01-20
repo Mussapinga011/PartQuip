@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS abastecimentos (
 -- ============================================
 CREATE TABLE IF NOT EXISTS vendas_2026 (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  numero_venda VARCHAR(50) UNIQUE NOT NULL,
+  numero_venda VARCHAR(50) NOT NULL,
   peca_id UUID REFERENCES pecas(id) ON DELETE SET NULL,
   peca_codigo VARCHAR(50),
   peca_nome VARCHAR(200),
@@ -103,17 +103,23 @@ CREATE TABLE IF NOT EXISTS vendas_2026 (
   cliente_veiculo TEXT,
   vendedor VARCHAR(100),
   forma_pagamento VARCHAR(50),
+  status VARCHAR(20) DEFAULT 'confirmada',
   observacoes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migração para tabelas existentes
+ALTER TABLE vendas_2026 ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'confirmada';
+ALTER TABLE vendas_2026 DROP CONSTRAINT IF EXISTS vendas_2026_numero_venda_key;
+
 
 -- ============================================
 -- TABELA: vendas_2027 (template para anos futuros)
 -- ============================================
 CREATE TABLE IF NOT EXISTS vendas_2027 (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  numero_venda VARCHAR(50) UNIQUE NOT NULL,
+  numero_venda VARCHAR(50) NOT NULL,
   peca_id UUID REFERENCES pecas(id) ON DELETE SET NULL,
   peca_codigo VARCHAR(50),
   peca_nome VARCHAR(200),
@@ -124,10 +130,15 @@ CREATE TABLE IF NOT EXISTS vendas_2027 (
   cliente_veiculo TEXT,
   vendedor VARCHAR(100),
   forma_pagamento VARCHAR(50),
+  status VARCHAR(20) DEFAULT 'confirmada',
   observacoes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+ALTER TABLE vendas_2027 ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'confirmada';
+ALTER TABLE vendas_2027 DROP CONSTRAINT IF EXISTS vendas_2027_numero_venda_key;
+
 
 -- ============================================
 -- ÍNDICES para Performance
@@ -170,18 +181,23 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers
+DROP TRIGGER IF EXISTS update_categorias_updated_at ON categorias;
 CREATE TRIGGER update_categorias_updated_at BEFORE UPDATE ON categorias
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_tipos_updated_at ON tipos;
 CREATE TRIGGER update_tipos_updated_at BEFORE UPDATE ON tipos
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_fornecedores_updated_at ON fornecedores;
 CREATE TRIGGER update_fornecedores_updated_at BEFORE UPDATE ON fornecedores
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_pecas_updated_at ON pecas;
 CREATE TRIGGER update_pecas_updated_at BEFORE UPDATE ON pecas
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_compat_updated_at ON compatibilidade_veiculos;
 CREATE TRIGGER update_compat_updated_at BEFORE UPDATE ON compatibilidade_veiculos
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -200,27 +216,35 @@ ALTER TABLE vendas_2026 ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendas_2027 ENABLE ROW LEVEL SECURITY;
 
 -- Políticas: Permitir tudo para usuários autenticados
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON categorias;
 CREATE POLICY "Permitir tudo para autenticados" ON categorias
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON tipos;
 CREATE POLICY "Permitir tudo para autenticados" ON tipos
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON fornecedores;
 CREATE POLICY "Permitir tudo para autenticados" ON fornecedores
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON pecas;
 CREATE POLICY "Permitir tudo para autenticados" ON pecas
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON compatibilidade_veiculos;
 CREATE POLICY "Permitir tudo para autenticados" ON compatibilidade_veiculos
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON abastecimentos;
 CREATE POLICY "Permitir tudo para autenticados" ON abastecimentos
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON vendas_2026;
 CREATE POLICY "Permitir tudo para autenticados" ON vendas_2026
   FOR ALL USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Permitir tudo para autenticados" ON vendas_2027;
 CREATE POLICY "Permitir tudo para autenticados" ON vendas_2027
   FOR ALL USING (auth.role() = 'authenticated');
 
@@ -236,7 +260,7 @@ BEGIN
   EXECUTE format('
     CREATE TABLE IF NOT EXISTS %I (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      numero_venda VARCHAR(50) UNIQUE NOT NULL,
+      numero_venda VARCHAR(50) NOT NULL,
       peca_id UUID REFERENCES pecas(id) ON DELETE SET NULL,
       peca_codigo VARCHAR(50),
       peca_nome VARCHAR(200),
@@ -247,6 +271,7 @@ BEGIN
       cliente_veiculo TEXT,
       vendedor VARCHAR(100),
       forma_pagamento VARCHAR(50),
+      status VARCHAR(20) DEFAULT ''confirmada'',
       observacoes TEXT,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

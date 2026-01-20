@@ -1,6 +1,7 @@
 // Impressao Component - Receipt Printing
 import { dbOperations } from '../lib/db.js';
 import { formatCurrency, formatDate } from '../utils/helpers.js';
+import { t } from '../lib/i18n.js';
 
 export async function initImpressao(container, vendaId = null) {
   // If vendaId is provided, we go straight to printing preview for that sale
@@ -20,32 +21,32 @@ export async function initImpressao(container, vendaId = null) {
 
     container.innerHTML = `
       <div class="space-y-6">
-        <h2 class="text-2xl font-bold text-gray-900">Impressão de Recibos</h2>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('receipt_printing') || 'Impressão de Recibos'}</h2>
         
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-           <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Selecione uma Venda para Imprimir</h3>
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('select_sale_print') || 'Selecione uma Venda para Imprimir'}</h3>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
-               <thead class="bg-gray-50">
+               <thead class="bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nº Venda</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('sale_date')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('sale_number') || 'Nº Venda'}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('client')}</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('total')}</th>
+                  <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('actions')}</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                 ${vendas.slice(0, 20).map(v => `
-                  <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${v.numero_venda || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${v.cliente_nome || 'Não informado'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatCurrency(v.total)}</td>
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${v.cliente_nome || t('not_informed') || 'Não informado'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
-                      <button class="btn-print text-primary hover:text-primary-dark font-medium" data-id="${v.id}">Imprimir</button>
+                      <button class="btn-print text-primary hover:text-primary-dark font-medium transition" data-id="${v.id}">${t('print') || 'Imprimir'}</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -71,61 +72,62 @@ export async function initImpressao(container, vendaId = null) {
 async function showPrintPreview(container, vendaId) {
   try {
     const venda = await dbOperations.getById('vendas', vendaId);
-    if (!venda) throw new Error('Venda não encontrada');
+    if (!venda) throw new Error(t('sale_not_found') || 'Venda não encontrada');
     const peca = await dbOperations.getById('pecas', venda.peca_id);
     
     // Receipt Template
     const receiptHTML = `
-      <div id="receipt-preview" class="bg-white p-8 max-w-2xl mx-auto shadow-lg my-8 border border-gray-200">
+      <div id="receipt-preview" class="bg-white dark:bg-gray-800 p-8 max-w-2xl mx-auto shadow-lg my-8 border border-gray-200 dark:border-gray-700">
         <div class="text-center mb-8">
-          <h1 class="text-2xl font-bold text-gray-900">PartQuit Auto Peças</h1>
-          <p class="text-gray-600">Rua Exemplo, 123 - Cidade, Estado</p>
-          <p class="text-gray-600">Tel: (00) 1234-5678</p>
+          <img src="/logo_modo_escuro.svg" class="w-48 mx-auto mb-4" alt="ShingMotors">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ShingMotors</h1>
+          <p class="text-gray-600 dark:text-gray-400">N_55, 1st street</p>
+          <p class="text-gray-600 dark:text-gray-400">Email: shingmotorspvt@gmail.com</p>
         </div>
         
-        <div class="border-b border-gray-200 pb-4 mb-4">
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
           <div class="flex justify-between mb-2">
-            <span class="text-gray-600">Data:</span>
-            <span class="font-medium">${formatDate(venda.created_at, 'dd/MM/yyyy HH:mm')}</span>
+            <span class="text-gray-600 dark:text-gray-400">${t('sale_date')}:</span>
+            <span class="font-medium text-gray-900 dark:text-white">${formatDate(venda.created_at, 'dd/MM/yyyy HH:mm')}</span>
           </div>
           <div class="flex justify-between mb-2">
-            <span class="text-gray-600">Venda Nº:</span>
-            <span class="font-medium">${venda.numero_venda || '-'}</span>
+            <span class="text-gray-600 dark:text-gray-400">${t('sale_number')}:</span>
+            <span class="font-medium text-gray-900 dark:text-white">${venda.numero_venda || '-'}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-600">Cliente:</span>
-            <span class="font-medium">${venda.cliente_nome || 'Consumidor Final'}</span>
+            <span class="text-gray-600 dark:text-gray-400">${t('client')}:</span>
+            <span class="font-medium text-gray-900 dark:text-white">${venda.cliente_nome || t('consumer_final') || 'Consumidor Final'}</span>
           </div>
         </div>
         
         <table class="w-full mb-8">
           <thead>
-            <tr class="border-b border-gray-200 text-left">
-              <th class="py-2 text-sm font-semibold text-gray-700">Item</th>
-              <th class="py-2 text-sm font-semibold text-gray-700 text-center">Qtd</th>
-              <th class="py-2 text-sm font-semibold text-gray-700 text-right">Preço</th>
-              <th class="py-2 text-sm font-semibold text-gray-700 text-right">Total</th>
+            <tr class="border-b border-gray-200 dark:border-gray-700 text-left">
+              <th class="py-2 text-sm font-semibold text-gray-700 dark:text-gray-300">${t('item') || 'Item'}</th>
+              <th class="py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">${t('quantity_short')}</th>
+              <th class="py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 text-right">${t('sale_price')}</th>
+              <th class="py-2 text-sm font-semibold text-gray-700 dark:text-gray-300 text-right">${t('total')}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td class="py-3 text-sm text-gray-800">${peca ? peca.nome : 'Item removido'} <span class="text-xs text-gray-500">(${peca ? peca.codigo : '?'})</span></td>
-              <td class="py-3 text-sm text-gray-800 text-center">${venda.quantidade}</td>
-              <td class="py-3 text-sm text-gray-800 text-right">${formatCurrency(venda.preco_venda || (venda.total / venda.quantidade))}</td>
-              <td class="py-3 text-sm text-gray-800 text-right font-medium">${formatCurrency(venda.total)}</td>
+              <td class="py-3 text-sm text-gray-800 dark:text-gray-200">${peca ? peca.nome : (t('item_deleted') || 'Item removido')} <span class="text-xs text-gray-500 dark:text-gray-500">(${peca ? peca.codigo : '?'})</span></td>
+              <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-center">${venda.quantidade}</td>
+              <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-right">${formatCurrency(venda.preco_venda || (venda.total / venda.quantidade))}</td>
+              <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-right font-medium">${formatCurrency(venda.total)}</td>
             </tr>
           </tbody>
           <tfoot>
-            <tr class="border-t border-gray-200">
-              <td colspan="3" class="py-4 text-right font-bold text-gray-900">TOTAL</td>
+            <tr class="border-t border-gray-200 dark:border-gray-700">
+              <td colspan="3" class="py-4 text-right font-bold text-gray-900 dark:text-white uppercase">${t('total')}</td>
               <td class="py-4 text-right font-bold text-xl text-primary">${formatCurrency(venda.total)}</td>
             </tr>
           </tfoot>
         </table>
         
-        <div class="text-center text-sm text-gray-500 mt-12">
-          <p>Obrigado pela preferência!</p>
-          <p class="mt-1">Trocas somente com este recibo em até 7 dias.</p>
+        <div class="text-center text-sm text-gray-500 dark:text-gray-400 mt-12">
+          <p>${t('thanks_preference') || 'Obrigado pela preferência!'}</p>
+          <p class="mt-1">${t('exchange_policy') || 'Trocas somente com este recibo em até 7 dias.'}</p>
         </div>
       </div>
 
@@ -134,10 +136,10 @@ async function showPrintPreview(container, vendaId) {
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2-4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
           </svg>
-          Imprimir
+          ${t('print')}
         </button>
-        <button id="btn-back-main" class="px-6 py-3 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition">
-          Voltar
+        <button id="btn-back-main" class="px-6 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition">
+          ${t('back')}
         </button>
       </div>
 

@@ -159,12 +159,12 @@ O sistema funciona em modo offline-first:
 
 ## 📝 Próximos Passos
 
-- [ ] Implementar edição e exclusão de peças/fornecedores
-- [ ] Criar componente de abastecimento (entradas)
-- [ ] Implementar cancelamento de vendas
-- [ ] Adicionar impressão de recibos (PDF)
+- [x] Implementar edição e exclusão de peças/fornecedores
+- [x] Criar componente de abastecimento (entradas)
+- [x] Implementar cancelamento de vendas
+- [x] Adicionar impressão de recibos (PDF)
 - [ ] Implementar gráficos interativos (Chart.js)
-- [ ] Criar componente de hierarquia (Categoria → Tipo → Código)
+- [x] Criar componente de hierarquia (Categoria → Tipo → Código)
 - [ ] Implementar abas anuais para vendas
 
 ## 🛠️ Tecnologias
@@ -186,3 +186,6 @@ Para dúvidas ou problemas, entre em contato com o desenvolvedor.
 ---
 
 **Desenvolvido com ❤️ para gestão eficiente de peças automotivas**
+git add .
+git commit -m "Adicionado Modo Escuro e suporte a Inglês/Português"
+git push origin main
