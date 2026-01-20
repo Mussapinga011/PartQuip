@@ -1,6 +1,7 @@
 // Synchronization Engine
 import { supabase, supabaseHelpers } from './supabase.js';
 import { dbOperations, syncQueue } from './db.js';
+import { notifySyncError } from './notifications.js';
 
 let isOnline = navigator.onLine;
 let isSyncing = false;
@@ -149,6 +150,7 @@ export async function syncData() {
 
     console.log('✅ Sync completed successfully');
   } catch (error) {
+    notifySyncError(error.message || error);
     console.error('Sync error:', error);
   } finally {
     isSyncing = false;

@@ -298,7 +298,7 @@ function processProductStats(vendas, pecas) {
 function processSalesmanRanking(vendas) {
   const rankings = {};
   vendas.forEach(v => {
-    const userEmail = v.user_id || 'Anônimo'; // Ideally we'd map ID to Name/Email
+    const userEmail = v.vendedor_nome || v.user_id || 'Anônimo'; 
     rankings[userEmail] = (rankings[userEmail] || 0) + v.total;
   });
 

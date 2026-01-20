@@ -1,8 +1,9 @@
-// Peças Component
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
+import { notifyPecaCreated, notifyPecaUpdated, notifyPecaDeleted } from '../lib/notifications.js';
+import { supabaseHelpers } from '../lib/supabase.js';
 
 export async function initPecas(container) {
   try {
@@ -278,6 +279,77 @@ export async function initPecas(container) {
       applyFilters();
     });
 
+    // Modal Events
+    const modal = document.getElementById('modal-peca');
+    const form = document.getElementById('form-peca');
+    const btnNovaPeca = document.getElementById('btn-nova-peca');
+    const btnCancelarPeca = document.getElementById('btn-cancelar-peca');
+
+    btnNovaPeca.addEventListener('click', () => {
+      form.reset();
+      delete form.dataset.editingId;
+      document.querySelector('#modal-peca h3').textContent = t('new_part');
+      modal.classList.remove('hidden');
+    });
+
+    btnCancelarPeca.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const editingId = form.dataset.editingId;
+      
+      const pecaData = {
+        codigo: formData.get('codigo'),
+        nome: formData.get('nome'),
+        categoria_id: formData.get('categoria_id'),
+        tipo_id: formData.get('tipo_id') || null,
+        preco_custo: parseFloat(formData.get('preco_custo')),
+        preco_venda: parseFloat(formData.get('preco_venda')),
+        stock_atual: parseInt(formData.get('stock_atual')),
+        stock_minimo: parseInt(formData.get('stock_minimo')),
+        localizacao: formData.get('localizacao'),
+        fornecedor_id: formData.get('fornecedor_id') || null,
+        updated_at: new Date().toISOString()
+      };
+
+      try {
+        if (editingId) {
+          const updatedPeca = { id: editingId, ...pecaData };
+          await dbOperations.put('pecas', updatedPeca);
+          await syncQueue.add('update', 'pecas', updatedPeca);
+          
+          const user = await supabaseHelpers.getCurrentUser();
+          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
+          notifyPecaUpdated(userName, pecaData.nome);
+          
+          showToast(t('update_success') || 'Peça atualizada com sucesso!', 'success');
+        } else {
+          const newPeca = {
+            id: generateId(),
+            ...pecaData,
+            created_at: new Date().toISOString()
+          };
+          await dbOperations.add('pecas', newPeca);
+          await syncQueue.add('insert', 'pecas', newPeca);
+          
+          const user = await supabaseHelpers.getCurrentUser();
+          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
+          notifyPecaCreated(userName, pecaData.nome);
+          
+          showToast(t('save_success') || 'Peça salva com sucesso!', 'success');
+        }
+        
+        modal.classList.add('hidden');
+        initPecas(container); // Reload
+      } catch (error) {
+        console.error('Error saving peça:', error);
+        showToast(t('save_error') || 'Erro ao salvar peça', 'error');
+      }
+    });
+
     // Edit and Delete handlers
     setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedores);
 
@@ -333,6 +405,11 @@ function setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedor
       try {
         await dbOperations.delete('pecas', pecaId);
         await syncQueue.add('delete', 'pecas', { id: pecaId });
+        
+        const user = await supabaseHelpers.getCurrentUser();
+        const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
+        notifyPecaDeleted(userName, peca.nome);
+        
         showToast(t('delete_success') || 'Peça excluída com sucesso!', 'success');
         initPecas(container); // Reload
       } catch (error) {

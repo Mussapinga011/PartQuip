@@ -2,6 +2,8 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
+import { notifyFornecedorCreated } from '../lib/notifications.js';
+import { supabaseHelpers } from '../lib/supabase.js';
 
 export async function initFornecedores(container) {
   try {
@@ -116,6 +118,11 @@ export async function initFornecedores(container) {
         } else {
           await dbOperations.add('fornecedores', data);
           await syncQueue.add('insert', 'fornecedores', data);
+          
+          const user = await supabaseHelpers.getCurrentUser();
+          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
+          notifyFornecedorCreated(userName, data.nome);
+          
           showToast('Fornecedor cadastrado com sucesso!', 'success');
         }
         

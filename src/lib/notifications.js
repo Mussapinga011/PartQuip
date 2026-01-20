@@ -34,7 +34,7 @@ function saveNotifications() {
 // Add a new notification
 export function addNotification(type, message, data = {}) {
   const notification = {
-    id: Date.now() + Math.random(),
+    id: String(Date.now() + Math.random()),
     type, // 'info', 'success', 'warning', 'error'
     message,
     data,

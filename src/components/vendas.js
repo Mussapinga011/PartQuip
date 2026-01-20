@@ -1,8 +1,9 @@
-// Vendas Component - Complete Sales Management
 import { dbOperations, syncQueue } from '../lib/db.js';
+import { supabaseHelpers } from '../lib/supabase.js';
 import { generateId, formatCurrency, formatDate, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
+import { notifyVendaCreated, notifyEstoqueBaixo } from '../lib/notifications.js';
 
 export async function initVendas(container) {
   try {
@@ -500,7 +501,14 @@ export async function initVendas(container) {
             peca.updated_at = new Date().toISOString();
             await dbOperations.put('pecas', peca);
             await syncQueue.add('update', 'pecas', peca);
+
+            // Check for low stock notification
+            if (peca.stock_atual < peca.stock_minimo) {
+              notifyEstoqueBaixo(peca.nome, peca.stock_atual);
+            }
           }
+
+          notifyVendaCreated(vendedorNome, item.quantidade, item.nome);
         }
 
         showToast(t('sale_finish_success')?.replace('{number}', numeroVenda) || `Venda ${numeroVenda} finalizada com sucesso!`, 'success');

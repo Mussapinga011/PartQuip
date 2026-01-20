@@ -26,6 +26,8 @@ export function initNotificationsPanel() {
 }
 
 function addNotificationBell() {
+  if (document.getElementById('notification-bell')) return;
+  
   const header = document.querySelector('header');
   if (!header) return;
   
@@ -60,6 +62,8 @@ function addNotificationBell() {
 }
 
 function createNotificationPanel() {
+  if (document.getElementById('notification-panel')) return;
+
   const panel = document.createElement('div');
   panel.id = 'notification-panel';
   panel.className = 'fixed top-16 right-4 w-96 max-w-full bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-40 hidden';
