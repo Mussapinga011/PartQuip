@@ -5,17 +5,13 @@ import { initDB } from './lib/db.js';
 import { initSync, stopSync } from './lib/sync.js';
 import { showToast, confirm, showAlert } from './utils/helpers.js';
 import { t, setLanguage, getCurrentLang } from './lib/i18n.js';
+import { initNotifications } from './lib/notifications.js';
+import { initNotificationsPanel } from './components/notificationsPanel.js';
+import { initRealtime } from './lib/realtime.js';
 
-// Import components (will be created next)
-import { initDashboard } from './components/dashboard.js';
-import { initPecas } from './components/pecas.js';
-import { initVendas } from './components/vendas.js';
-import { initBuscaVeiculo } from './components/buscaVeiculo.js';
-import { initFornecedores } from './components/fornecedores.js';
-import { initRelatorios } from './components/relatorios.js';
-import { initHierarquia } from './components/hierarquia.js';
-import { initAbastecimento } from './components/abastecimento.js';
-import { initImpressao } from './components/impressao.js';
+// Components will be loaded dynamically (Code Splitting)
+// This improves initial load time significantly
+
 
 // Global state
 let currentUser = null;
@@ -57,6 +53,12 @@ async function init() {
       currentUser = user;
       showApp();
       initSync();
+      initNotifications();
+      initNotificationsPanel();
+      initRealtime((store, event, record) => {
+        // Here we could trigger global UI refreshes if needed
+        console.log(`Live Update: ${event} in ${store}`);
+      });
       applyTranslations();
       loadPage('dashboard');
     } else {
@@ -181,7 +183,7 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-// Load page
+// Load page with dynamic imports (Code Splitting)
 async function loadPage(page) {
   currentPage = page;
   
@@ -218,39 +220,84 @@ async function loadPage(page) {
     }
   });
 
+  // Show loading indicator
+  mainContent.innerHTML = `
+    <div class="flex items-center justify-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  `;
+
+  try {
+    // Dynamic imports - only load the component when needed
     switch(page) {
-      case 'dashboard':
+      case 'dashboard': {
+        const { initDashboard } = await import('./components/dashboard.js');
         await initDashboard(mainContent);
         break;
-      case 'pecas':
+      }
+      case 'pecas': {
+        const { initPecas } = await import('./components/pecas.js');
         await initPecas(mainContent);
         break;
-      case 'hierarquia':
+      }
+      case 'hierarquia': {
+        const { initHierarquia } = await import('./components/hierarquia.js');
         await initHierarquia(mainContent);
         break;
-      case 'vendas':
+      }
+      case 'vendas': {
+        const { initVendas } = await import('./components/vendas.js');
         await initVendas(mainContent);
         break;
-      case 'abastecimento':
+      }
+      case 'abastecimento': {
+        const { initAbastecimento } = await import('./components/abastecimento.js');
         await initAbastecimento(mainContent);
         break;
-      case 'busca-veiculo':
+      }
+      case 'busca-veiculo': {
+        const { initBuscaVeiculo } = await import('./components/buscaVeiculo.js');
         await initBuscaVeiculo(mainContent);
         break;
-      case 'fornecedores':
+      }
+      case 'fornecedores': {
+        const { initFornecedores } = await import('./components/fornecedores.js');
         await initFornecedores(mainContent);
         break;
-      case 'relatorios':
+      }
+      case 'relatorios': {
+        const { initRelatorios } = await import('./components/relatorios.js');
         await initRelatorios(mainContent);
         break;
-      case 'impressao':
+      }
+      case 'impressao': {
+        const { initImpressao } = await import('./components/impressao.js');
         await initImpressao(mainContent);
         break;
-      default:
+      }
+      default: {
         showToast(t('page_not_found') || 'Página não encontrada', 'error');
+        const { initDashboard } = await import('./components/dashboard.js');
         await initDashboard(mainContent);
+      }
     }
+  } catch (error) {
+    console.error('Error loading page:', error);
+    mainContent.innerHTML = `
+      <div class="flex flex-col items-center justify-center h-64 gap-4">
+        <svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="text-gray-600 dark:text-gray-400">${t('error_loading_page') || 'Erro ao carregar página'}</p>
+        <button onclick="location.reload()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+          ${t('reload') || 'Recarregar'}
+        </button>
+      </div>
+    `;
+    showToast(t('error_loading_page') || 'Erro ao carregar página', 'error');
+  }
 }
+
 
 // Start app
 init();

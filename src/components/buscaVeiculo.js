@@ -60,6 +60,9 @@ export async function initBuscaVeiculo(container) {
               </svg>
               ${t('search_parts')}
             </button>
+            <button id="btn-limpar-busca" class="w-full md:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition">
+              ${t('clear') || 'Limpar'}
+            </button>
           </div>
         </div>
 
@@ -71,22 +74,30 @@ export async function initBuscaVeiculo(container) {
           </div>
         </div>
 
+        <!-- Gerenciar Compatibilidades -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div class="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('registered_compatibilities')}</h3>
+            <div class="relative w-full sm:w-64">
+              <input 
+                type="text" 
+                id="filter-compatibilidades" 
+                placeholder="Filtrar veículos..." 
+                class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+              <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+          </div>
+          <div id="lista-todas-compatibilidades" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- List of all compatibilities will be rendered here -->
+          </div>
+        </div>
+
         <!-- Histórico de Buscas -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">${t('recent_searches')}</h3>
           <div id="historico-buscas" class="space-y-2">
             <p class="text-gray-400 text-sm">${t('no_records')}</p>
-          </div>
-        </div>
-
-        <!-- Gerenciar Compatibilidades -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('registered_compatibilities')}</h3>
-            <div id="pagination-info" class="text-sm text-gray-500 dark:text-gray-400"></div>
-          </div>
-          <div id="lista-todas-compatibilidades" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- List of all compatibilities will be rendered here -->
           </div>
         </div>
       </div>
@@ -167,8 +178,25 @@ export async function initBuscaVeiculo(container) {
       updateBuscarButton();
     });
 
+    // Limpar busca
+    document.getElementById('btn-limpar-busca').addEventListener('click', () => {
+      document.getElementById('select-marca').value = '';
+      document.getElementById('select-modelo').value = '';
+      document.getElementById('select-modelo').disabled = true;
+      document.getElementById('input-ano').value = '';
+      document.getElementById('input-ano').disabled = true;
+      document.getElementById('resultados-container').classList.add('hidden');
+      updateBuscarButton();
+    });
+
     // Modelo selection
-    document.getElementById('select-modelo').addEventListener('change', updateBuscarButton);
+    document.getElementById('select-modelo').addEventListener('change', () => {
+      updateBuscarButton();
+      if (document.getElementById('select-modelo').value) {
+        document.getElementById('btn-buscar-veiculo').click(); // Auto-search
+      }
+    });
+    
     document.getElementById('input-ano').addEventListener('input', updateBuscarButton);
 
     function updateBuscarButton() {
@@ -247,11 +275,18 @@ export async function initBuscaVeiculo(container) {
       }).join('');
 
       document.getElementById('resultados-container').classList.remove('hidden');
+      document.getElementById('resultados-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-      // Add to history
-      const busca = { marca, modelo, ano, timestamp: new Date().toISOString() };
-      historicoBuscas.unshift(busca);
-      historicoBuscas = historicoBuscas.slice(0, 5); // Keep last 5
+      // Add to history (avoid duplicates)
+      const novaBusca = { marca, modelo, ano: ano || null };
+      historicoBuscas = historicoBuscas.filter(h => 
+        h.marca !== novaBusca.marca || 
+        h.modelo !== novaBusca.modelo || 
+        h.ano !== novaBusca.ano
+      );
+      
+      historicoBuscas.unshift({ ...novaBusca, timestamp: new Date().toISOString() });
+      historicoBuscas = historicoBuscas.slice(0, 5); // Strict limit of 5
       localStorage.setItem('historico_buscas', JSON.stringify(historicoBuscas));
       renderHistorico();
     });
@@ -271,7 +306,7 @@ export async function initBuscaVeiculo(container) {
           </div>
           <button 
             class="text-sm text-primary hover:text-primary-dark"
-            onclick="document.getElementById('select-marca').value='${b.marca}'; document.getElementById('select-marca').dispatchEvent(new Event('change')); setTimeout(() => { document.getElementById('select-modelo').value='${b.modelo}'; document.getElementById('input-ano').value='${b.ano || ''}'; document.getElementById('btn-buscar-veiculo').disabled = false; }, 100);"
+            onclick="window.veiculoActions.repetirBusca('${b.marca}', '${b.modelo}', '${b.ano || ''}')"
           >
             ${t('repeat')}
           </button>
@@ -279,10 +314,22 @@ export async function initBuscaVeiculo(container) {
       `).join('');
     }
 
+    // List Filtering
+    document.getElementById('filter-compatibilidades').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      renderTodasCompatibilidades(term);
+    });
+
     // Render all compatibilities grouped by vehicle
-    function renderTodasCompatibilidades() {
+    function renderTodasCompatibilidades(filter = '') {
       const div = document.getElementById('lista-todas-compatibilidades');
-      if (compatibilidades.length === 0) {
+      
+      const filteredCompat = compatibilidades.filter(c => {
+        const text = `${c.marca} ${c.modelo} ${c.ano || ''} ${(c.codigos_compativeis || []).join(' ')}`.toLowerCase();
+        return text.includes(filter);
+      });
+
+      if (filteredCompat.length === 0) {
         div.innerHTML = `
           <div class="col-span-full text-center py-8">
             <p class="text-gray-400 dark:text-gray-500">${t('no_records')}</p>
@@ -293,7 +340,7 @@ export async function initBuscaVeiculo(container) {
 
       // Grouping logic: "Brand Model Year" -> [Records]
       const agrupado = {};
-      compatibilidades.forEach(c => {
+      filteredCompat.forEach(c => {
         const key = `${c.marca}|${c.modelo}|${c.ano || 'univ'}`;
         if (!agrupado[key]) agrupado[key] = { 
           marca: c.marca, 
@@ -445,9 +492,42 @@ export async function initBuscaVeiculo(container) {
     // Global actions
     window.veiculoActions = {
       adicionarAoCarrinho: (id) => {
-        import('../utils/helpers.js').then(m => {
-          m.showAlert(t('feature_upcoming') || 'Funcionalidade em desenvolvimento', t('upcoming') || 'Em breve');
-        });
+        const item = pecas.find(p => p.id === id);
+        if (!item) return;
+
+        // Store in temporary cart for Vendas component to pick up
+        let cart = JSON.parse(localStorage.getItem('temp_venda_items') || '[]');
+        const exists = cart.find(i => i.peca_id === id);
+        
+        if (!exists) {
+          cart.push({
+            peca_id: item.id,
+            codigo: item.codigo,
+            nome: item.nome,
+            quantidade: 1,
+            preco_unitario: item.preco_venda,
+            subtotal: item.preco_venda,
+            stock_disponivel: item.stock_atual
+          });
+          localStorage.setItem('temp_venda_items', JSON.stringify(cart));
+          showToast(`${item.nome} adicionado à venda!`, 'success');
+        } else {
+          showToast('Item já está na lista de venda', 'info');
+        }
+
+        // Redirect to sales page
+        document.querySelector('[data-page="vendas"]')?.click();
+      },
+      repetirBusca: (marca, modelo, ano) => {
+        document.getElementById('select-marca').value = marca;
+        document.getElementById('select-marca').dispatchEvent(new Event('change'));
+        
+        setTimeout(() => {
+          document.getElementById('select-modelo').value = modelo;
+          document.getElementById('input-ano').value = ano;
+          document.getElementById('btn-buscar-veiculo').disabled = false;
+          document.getElementById('btn-buscar-veiculo').click(); // Auto execute
+        }, 150);
       }
     };
 

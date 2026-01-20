@@ -298,23 +298,38 @@ $$ LANGUAGE plpgsql;
 -- DADOS INICIAIS (Exemplos)
 -- ============================================
 
--- Inserir categorias exemplo
+-- Inserir categorias reais
 INSERT INTO categorias (nome, descricao) VALUES
-  ('Idle Arm', 'Braço de direção'),
-  ('Drop Arm', 'Braço pitman'),
-  ('Center', 'Braço central'),
-  ('Thrust Bearing', 'Rolamento de empuxo')
+  ('Ball Joints', 'Juntas Esféricas'),
+  ('Tirod Ends', 'Terminais de Direção'),
+  ('Fuel Pump', 'Bomba de Combustível'),
+  ('Shocks', 'Amortecedores'),
+  ('Stabilizer', 'Estabilizador / Barra Estabilizadora'),
+  ('Wheel Bearing', 'Rolamento de Roda'),
+  ('Thrust Bearing', 'Rolamento de Empuxo'),
+  ('Gearbox Bearing', 'Rolamento de Caixa de Velocidades'),
+  ('CV Joint', 'Junta Homocinética'),
+  ('Master Cylinder', 'Cilindro Mestre'),
+  ('Idler Arms', 'Braço Auxiliar'),
+  ('Drop Arms', 'Braço de Comando / Pitman')
 ON CONFLICT (nome) DO NOTHING;
 
--- Inserir tipos exemplo
+-- Inserir tipos (mapeamento de códigos)
 INSERT INTO tipos (codigo, descricao, categoria_id) VALUES
-  ('AR', 'Tipo AR', (SELECT id FROM categorias WHERE nome = 'Idle Arm' LIMIT 1)),
-  ('PQ', 'Tipo PQ', (SELECT id FROM categorias WHERE nome = 'Idle Arm' LIMIT 1)),
-  ('FP', 'Tipo FP', (SELECT id FROM categorias WHERE nome = 'Idle Arm' LIMIT 1)),
-  ('DR', 'Tipo DR', (SELECT id FROM categorias WHERE nome = 'Drop Arm' LIMIT 1)),
-  ('CS', 'Tipo CS', (SELECT id FROM categorias WHERE nome = 'Center' LIMIT 1)),
-  ('RB', 'Tipo RB', (SELECT id FROM categorias WHERE nome = 'Thrust Bearing' LIMIT 1))
-ON CONFLICT (codigo) DO NOTHING;
+  ('BJ', 'Ball Joints', (SELECT id FROM categorias WHERE nome = 'Ball Joints' LIMIT 1)),
+  ('TR', 'Tirod Ends', (SELECT id FROM categorias WHERE nome = 'Tirod Ends' LIMIT 1)),
+  ('FP', 'Fuel Pump', (SELECT id FROM categorias WHERE nome = 'Fuel Pump' LIMIT 1)),
+  ('SX', 'Shocks', (SELECT id FROM categorias WHERE nome = 'Shocks' LIMIT 1)),
+  ('PQ', 'Wheel Bearing', (SELECT id FROM categorias WHERE nome = 'Wheel Bearing' LIMIT 1)),
+  ('RB', 'Thrust Bearing', (SELECT id FROM categorias WHERE nome = 'Thrust Bearing' LIMIT 1)),
+  ('GB', 'Gearbox Bearing', (SELECT id FROM categorias WHERE nome = 'Gearbox Bearing' LIMIT 1)),
+  ('PJ', 'CV Joint', (SELECT id FROM categorias WHERE nome = 'CV Joint' LIMIT 1)),
+  ('AR', 'Stabilizer', (SELECT id FROM categorias WHERE nome = 'Stabilizer' LIMIT 1)),
+  ('CM', 'Master Cylinder', (SELECT id FROM categorias WHERE nome = 'Master Cylinder' LIMIT 1))
+ON CONFLICT (codigo) DO UPDATE 
+SET categoria_id = EXCLUDED.categoria_id, 
+    descricao = EXCLUDED.descricao,
+    updated_at = NOW();
 
 -- Mensagem final
 DO $$

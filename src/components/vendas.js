@@ -2,6 +2,7 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, formatDate, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
+import { searchService } from '../lib/search.js';
 
 export async function initVendas(container) {
   try {
@@ -142,8 +143,22 @@ export async function initVendas(container) {
 
         <!-- Historico View -->
         <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('history')}</h3>
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('history')}</h3>
+              <div class="flex gap-2">
+                <button id="btn-export-vendas-excel" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-green-600 transition" title="Exportar Ano (Excel)">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </button>
+                <button id="btn-export-vendas-pdf" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 transition" title="Exportar Ano (PDF)">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                </button>
+                <button id="btn-export-vendas-tudo" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-xs font-bold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  Exportar Histórico Completo
+                </button>
+              </div>
+            </div>
             <!-- Year Tabs -->
             <div id="historico-anos" class="flex flex-wrap gap-2">
               <!-- Tabs injected via JS -->
@@ -185,6 +200,17 @@ export async function initVendas(container) {
     let totalVenda = 0;
     let currentYearFilter = new Date().getFullYear();
 
+    // Check for pending items from vehicle search
+    const pendingItems = JSON.parse(localStorage.getItem('temp_venda_items') || '[]');
+    if (pendingItems.length > 0) {
+      itensVenda = [...itensVenda, ...pendingItems];
+      localStorage.removeItem('temp_venda_items');
+      setTimeout(() => {
+        renderItens();
+        calcularTotal();
+      }, 100);
+    }
+
     // Busca de peças
     const buscaInput = document.getElementById('busca-peca-venda');
     const resultadosDiv = document.getElementById('resultados-busca');
@@ -197,13 +223,19 @@ export async function initVendas(container) {
         return;
       }
 
+      // Use searchService to find matches
       const resultados = pecas.filter(p => 
         p.codigo.toLowerCase().includes(termo) || 
-        p.nome.toLowerCase().includes(termo)
+        p.nome.toLowerCase().includes(termo) ||
+        p.localizacao?.toLowerCase().includes(termo)
       ).slice(0, 10);
 
       if (resultados.length === 0) {
-        resultadosDiv.innerHTML = `<div class="p-3 text-sm text-gray-500 dark:text-gray-400">${t('no_records')}</div>`;
+        resultadosDiv.innerHTML = `
+          <div class="p-3 text-sm text-gray-500 dark:text-gray-400">
+            ${t('no_records')}
+          </div>
+        `;
       } else {
         resultadosDiv.innerHTML = resultados.map(p => {
           const categoria = categorias.find(c => c.id === p.categoria_id);
@@ -227,11 +259,38 @@ export async function initVendas(container) {
           `;
         }).join('');
 
+        // Add history section if it exists
+        const history = searchService.getHistory();
+        if (history.length > 0) {
+           const historyHtml = `
+            <div class="bg-gray-50 dark:bg-gray-800 p-2 text-[10px] uppercase font-bold text-gray-400 border-t border-b border-gray-200 dark:border-gray-600">Buscas Recentes</div>
+            <div class="flex flex-wrap gap-1 p-2">
+              ${history.slice(0, 5).map(h => `
+                <span class="px-2 py-1 bg-white dark:bg-gray-700 rounded-full text-xs text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 cursor-pointer hover:border-primary transition" data-history-term="${h}">${h}</span>
+              `).join('')}
+            </div>
+           `;
+           resultadosDiv.insertAdjacentHTML('afterbegin', historyHtml);
+           
+           resultadosDiv.querySelectorAll('[data-history-term]').forEach(el => {
+             el.addEventListener('click', (e) => {
+               e.stopPropagation();
+               buscaInput.value = el.dataset.historyTerm;
+               buscaInput.dispatchEvent(new Event('input'));
+             });
+           });
+        }
+
         // Add click handlers
         resultadosDiv.querySelectorAll('[data-peca-id]').forEach(el => {
           el.addEventListener('click', () => {
             const pecaId = el.dataset.pecaId;
             const peca = pecas.find(p => p.id === pecaId);
+            
+            // Add to history when selected
+            searchService.addToHistory(peca.nome);
+            searchService.addToHistory(peca.codigo);
+            
             adicionarItem(peca);
             buscaInput.value = '';
             resultadosDiv.classList.add('hidden');
@@ -546,8 +605,93 @@ export async function initVendas(container) {
           </tr>
         `;
       }).join('');
+
+      // Add Export Handlers
+      document.getElementById('btn-export-vendas-excel').onclick = () => {
+        const table = document.querySelector('#historico-venda-view table');
+        exportToCSV(table, `Historico_Vendas_${currentYearFilter}`);
+      };
+
+      document.getElementById('btn-export-vendas-pdf').onclick = async () => {
+        const { jsPDF } = window.jspdf;
+        const html2canvas = window.html2canvas;
+        const historyTable = document.querySelector('#historico-venda-view .overflow-x-auto');
+        
+        if (!jsPDF || !html2canvas) {
+           showToast('Biblioteca de PDF não carregada', 'error');
+           return;
+        }
+
+        try {
+          const canvas = await html2canvas(historyTable, { scale: 2 });
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+          pdf.setFontSize(16);
+          pdf.text(`${t('history')} - ${currentYearFilter}`, 15, 15);
+          pdf.addImage(imgData, 'PNG', 0, 20, pdfWidth, pdfHeight);
+          pdf.save(`Historico_Vendas_${currentYearFilter}.pdf`);
+          showToast('PDF gerado com sucesso!', 'success');
+        } catch (error) {
+          console.error('Erro PDF:', error);
+          showToast('Erro ao gerar PDF', 'error');
+        }
+      };
+
+      document.getElementById('btn-export-vendas-tudo').onclick = async () => {
+        const vendas = await dbOperations.getAll('vendas');
+        if (vendas.length === 0) {
+          showToast('Nenhum dado para exportar', 'error');
+          return;
+        }
+
+        // CSV All
+        const headers = ["Data", "Nº Venda", "Peça", "Qtd", "Total", "Pagamento", "Status"];
+        const csvContent = [
+          headers.join(','),
+          ...vendas.map(v => [
+            formatDate(v.created_at, 'dd/MM/yyyy HH:mm'),
+            v.numero_venda || '-',
+            `"${v.peca_codigo || ''} - ${v.peca_nome || ''}"`,
+            v.quantidade,
+            v.total,
+            v.forma_pagamento,
+            v.status
+          ].join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'Historico_Vendas_Completo.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showToast('Exportação completa (CSV) concluída!', 'success');
+      };
     }
 
+    function exportToCSV(table, filename) {
+      const rows = Array.from(table.querySelectorAll('tr'));
+      const csvContent = rows.map(row => {
+        const cells = Array.from(row.querySelectorAll('th, td'));
+        // Filter out actions column
+        return cells.slice(0, -1).map(cell => `"${cell.textContent.trim().replace(/"/g, '""')}"`).join(',');
+      }).filter(line => line.length > 0).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
     // Add Cancel Action to Global Scope
     window.vendaActions.cancelarVenda = async (id) => {
       if (!await confirm(t('confirm_cancel_sale') || 'Tem certeza que deseja cancelar esta venda? O stock será restaurado.')) return;

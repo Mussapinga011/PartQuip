@@ -2,6 +2,7 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
+import { searchService } from '../lib/search.js';
 
 export async function initPecas(container) {
   try {
@@ -24,25 +25,51 @@ export async function initPecas(container) {
 
         <!-- Search and Filters -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input 
-              type="text" 
-              id="search-pecas" 
-              placeholder="${t('search_placeholder')}" 
-              class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-            <select id="filter-categoria" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="lg:col-span-2 relative">
+              <input 
+                type="text" 
+                id="search-pecas" 
+                placeholder="${t('search_placeholder')}" 
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+              <div id="search-history-dropdown" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg"></div>
+            </div>
+            
+            <select id="filter-categoria" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
               <option value="">${t('all_categories')}</option>
               ${categorias.map(c => `<option value="${c.id}">${c.nome}</option>`).join('')}
             </select>
-            <select id="filter-stock" class="px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+
+            <select id="filter-fornecedor" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+              <option value="">${t('all_suppliers') || 'Todos fornecedores'}</option>
+              ${fornecedores.map(f => `<option value="${f.id}">${f.nome}</option>`).join('')}
+            </select>
+
+            <select id="filter-stock" class="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
               <option value="">${t('all_stocks')}</option>
-              <option value="baixo">${t('low_stock_filter')}</option>
+              <option value="low">${t('low_stock_filter')}</option>
               <option value="zero">${t('zero_stock_filter')}</option>
             </select>
-            <button id="btn-limpar-filtros" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition">
-              ${t('clear_filters')}
-            </button>
+
+            <div class="flex gap-2">
+              <button id="btn-toggle-advanced" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition text-sm">
+                ${t('filters') || 'Filtros'}
+              </button>
+              <button id="btn-limpar-filtros" class="px-3 py-2 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition" title="${t('clear_filters')}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Advanced Price Filter (Hidden by default) -->
+          <div id="advanced-filters" class="hidden mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div class="flex items-center gap-2">
+               <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${t('price_range') || 'Preço (MZN)'}:</span>
+               <input type="number" id="filter-min-price" placeholder="Min" class="w-full px-3 py-1.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-md text-sm text-white">
+               <span class="text-gray-400">-</span>
+               <input type="number" id="filter-max-price" placeholder="Max" class="w-full px-3 py-1.5 border border-gray-200 dark:border-gray-700 dark:bg-gray-700 rounded-md text-sm text-white">
+             </div>
           </div>
         </div>
 
@@ -140,63 +167,115 @@ export async function initPecas(container) {
       </div>
     `;
 
-    // Event listeners
-    document.getElementById('btn-nova-peca').addEventListener('click', () => {
-      document.getElementById('modal-peca').classList.remove('hidden');
+    // Filter Logic
+    const filterState = {
+      term: '',
+      category_id: '',
+      fornecedor_id: '',
+      stock_status: '',
+      min_price: '',
+      max_price: ''
+    };
+
+    function applyFilters() {
+      const filtered = searchService.filterLocally(pecas, filterState);
+      document.getElementById('pecas-tbody').innerHTML = renderPecasRows(filtered, categorias);
+      setupEditDeleteHandlers(container, filtered, categorias, tipos, fornecedores);
+    }
+
+    // Input Events
+    const searchInput = document.getElementById('search-pecas');
+    searchInput.addEventListener('input', (e) => {
+      filterState.term = e.target.value;
+      applyFilters();
     });
 
-    document.getElementById('btn-cancelar-peca').addEventListener('click', () => {
-      const form = document.getElementById('form-peca');
-      form.reset();
-      delete form.dataset.editingId;
-      document.querySelector('#modal-peca h3').textContent = t('new_part');
-      document.getElementById('modal-peca').classList.add('hidden');
+    searchInput.addEventListener('blur', () => {
+      if (filterState.term) searchService.addToHistory(filterState.term);
+      setTimeout(() => document.getElementById('search-history-dropdown').classList.add('hidden'), 200);
     });
 
-    document.getElementById('form-peca').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const editingId = e.target.dataset.editingId;
+    searchInput.addEventListener('focus', () => {
+      renderSearchHistory();
+    });
 
-      const data = {
-        id: editingId || generateId(),
-        codigo: formData.get('codigo'),
-        nome: formData.get('nome'),
-        categoria_id: formData.get('categoria_id') || null,
-        tipo_id: formData.get('tipo_id') || null,
-        preco_custo: parseFloat(formData.get('preco_custo')),
-        preco_venda: parseFloat(formData.get('preco_venda')),
-        stock_atual: parseInt(formData.get('stock_atual')),
-        stock_minimo: parseInt(formData.get('stock_minimo')),
-        localizacao: formData.get('localizacao') || null,
-        fornecedor_id: formData.get('fornecedor_id') || null,
-        updated_at: new Date().toISOString()
-      };
-
-      if (!editingId) {
-        data.created_at = new Date().toISOString();
+    function renderSearchHistory() {
+      const history = searchService.getHistory();
+      const dropdown = document.getElementById('search-history-dropdown');
+      if (history.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
       }
 
-      try {
-        if (editingId) {
-          await dbOperations.put('pecas', data);
-          await syncQueue.add('update', 'pecas', data);
-          showToast(t('update_success') || 'Peça atualizada com sucesso!', 'success');
-        } else {
-          await dbOperations.add('pecas', data);
-          await syncQueue.add('insert', 'pecas', data);
-          showToast(t('save_success') || 'Peça cadastrada com sucesso!', 'success');
-        }
-        
-        document.getElementById('modal-peca').classList.add('hidden');
-        e.target.reset();
-        delete e.target.dataset.editingId;
-        document.querySelector('#modal-peca h3').textContent = t('new_part');
-        initPecas(container); // Reload
-      } catch (error) {
-        console.error('Error saving peça:', error);
-        showToast(editingId ? (t('update_error') || 'Erro ao atualizar peça') : (t('save_error') || 'Erro ao cadastrar peça'), 'error');
-      }
+      dropdown.innerHTML = `
+        <div class="p-2 text-[10px] uppercase font-bold text-gray-400 dark:text-gray-500 border-b border-gray-100 dark:border-gray-600">Buscas Recentes</div>
+        ${history.map(term => `
+          <div class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer text-sm text-gray-700 dark:text-gray-200 transition" data-history-term="${term}">
+            ${term}
+          </div>
+        `).join('')}
+        <div id="clear-history" class="p-2 text-center text-xs text-blue-500 hover:text-blue-600 cursor-pointer border-t border-gray-100 dark:border-gray-600">Limpar Histórico</div>
+      `;
+
+      dropdown.querySelectorAll('[data-history-term]').forEach(el => {
+        el.addEventListener('mousedown', (e) => { // Using mousedown as click fires after blur
+          e.preventDefault();
+          searchInput.value = el.dataset.historyTerm;
+          filterState.term = searchInput.value;
+          applyFilters();
+          dropdown.classList.add('hidden');
+        });
+      });
+
+      document.getElementById('clear-history').addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        searchService.clearHistory();
+        dropdown.classList.add('hidden');
+      });
+
+      dropdown.classList.remove('hidden');
+    }
+
+    document.getElementById('filter-categoria').addEventListener('change', (e) => {
+      filterState.category_id = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('filter-fornecedor').addEventListener('change', (e) => {
+      filterState.fornecedor_id = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('filter-stock').addEventListener('change', (e) => {
+      filterState.stock_status = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('btn-toggle-advanced').addEventListener('click', () => {
+      const adv = document.getElementById('advanced-filters');
+      adv.classList.toggle('hidden');
+    });
+
+    document.getElementById('filter-min-price').addEventListener('input', (e) => {
+      filterState.min_price = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('filter-max-price').addEventListener('input', (e) => {
+      filterState.max_price = e.target.value;
+      applyFilters();
+    });
+
+    document.getElementById('btn-limpar-filtros').addEventListener('click', () => {
+      searchInput.value = '';
+      document.getElementById('filter-categoria').value = '';
+      document.getElementById('filter-fornecedor').value = '';
+      document.getElementById('filter-stock').value = '';
+      document.getElementById('filter-min-price').value = '';
+      document.getElementById('filter-max-price').value = '';
+      
+      Object.keys(filterState).forEach(k => filterState[k] = '');
+      applyFilters();
     });
 
     // Edit and Delete handlers

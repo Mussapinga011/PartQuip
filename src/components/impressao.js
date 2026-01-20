@@ -43,7 +43,7 @@ export async function initImpressao(container, vendaId = null) {
                   <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${v.cliente_nome || t('not_informed') || 'Não informado'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${v.cliente_nome || v.cliente_veiculo || t('not_informed') || 'Não informado'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right">
                       <button class="btn-print text-primary hover:text-primary-dark font-medium transition" data-id="${v.id}">${t('print') || 'Imprimir'}</button>
@@ -71,9 +71,14 @@ export async function initImpressao(container, vendaId = null) {
 
 async function showPrintPreview(container, vendaId) {
   try {
+    if (!vendaId) throw new Error('ID da venda não fornecido');
     const venda = await dbOperations.getById('vendas', vendaId);
     if (!venda) throw new Error(t('sale_not_found') || 'Venda não encontrada');
-    const peca = await dbOperations.getById('pecas', venda.peca_id);
+    
+    let peca = null;
+    if (venda.peca_id) {
+      peca = await dbOperations.getById('pecas', venda.peca_id);
+    }
     
     // Receipt Template
     const receiptHTML = `
@@ -96,7 +101,7 @@ async function showPrintPreview(container, vendaId) {
           </div>
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">${t('client')}:</span>
-            <span class="font-medium text-gray-900 dark:text-white">${venda.cliente_nome || t('consumer_final') || 'Consumidor Final'}</span>
+            <span class="font-medium text-gray-900 dark:text-white">${venda.cliente_nome || venda.cliente_veiculo || t('consumer_final') || 'Consumidor Final'}</span>
           </div>
         </div>
         
@@ -111,7 +116,10 @@ async function showPrintPreview(container, vendaId) {
           </thead>
           <tbody>
             <tr>
-              <td class="py-3 text-sm text-gray-800 dark:text-gray-200">${peca ? peca.nome : (t('item_deleted') || 'Item removido')} <span class="text-xs text-gray-500 dark:text-gray-500">(${peca ? peca.codigo : '?'})</span></td>
+              <td class="py-3 text-sm text-gray-800 dark:text-gray-200">
+                ${peca ? peca.nome : (venda.peca_nome || t('item_deleted') || 'Item removido')} 
+                <span class="text-xs text-gray-500 dark:text-gray-500">(${peca ? peca.codigo : (venda.peca_codigo || '?')})</span>
+              </td>
               <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-center">${venda.quantidade}</td>
               <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-right">${formatCurrency(venda.preco_venda || (venda.total / venda.quantidade))}</td>
               <td class="py-3 text-sm text-gray-800 dark:text-gray-200 text-right font-medium">${formatCurrency(venda.total)}</td>

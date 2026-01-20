@@ -62,6 +62,7 @@ export const dbOperations = {
   },
 
   async getById(storeName, id) {
+    if (!id) return null;
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(storeName, 'readonly');
       const store = transaction.objectStore(storeName);

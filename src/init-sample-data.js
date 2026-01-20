@@ -9,77 +9,77 @@ export async function initSampleData() {
 
   try {
     // Sample Categories
-    const categorias = [
-      { id: generateId(), nome: 'Filtros', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: generateId(), nome: 'Peças de Motor', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: generateId(), nome: 'Suspensão', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: generateId(), nome: 'Freios', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    const categoriasBase = [
+      { id: generateId(), nome: 'Ball Joints' },
+      { id: generateId(), nome: 'Tirod Ends' },
+      { id: generateId(), nome: 'Fuel Pump' },
+      { id: generateId(), nome: 'Shocks' },
+      { id: generateId(), nome: 'Stabilizer' },
+      { id: generateId(), nome: 'Wheel Bearing' },
+      { id: generateId(), nome: 'Thrust Bearing' },
+      { id: generateId(), nome: 'Gearbox Bearing' },
+      { id: generateId(), nome: 'CV Joint' },
+      { id: generateId(), nome: 'Master Cylinder' },
+      { id: generateId(), nome: 'Idler Arms' },
+      { id: generateId(), nome: 'Drop Arms' }
     ];
+
+    const categorias = categoriasBase.map(cat => ({
+      ...cat,
+      descricao: cat.nome,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
 
     for (const cat of categorias) {
       await dbOperations.add('categorias', cat);
     }
     console.log('✅ Categorias criadas');
 
+    // Sample Types (Mapeamento de Códigos)
+    const mapping = [
+      { codigo: 'BJ', nome: 'Ball Joints' },
+      { codigo: 'TR', nome: 'Tirod Ends' },
+      { codigo: 'FP', nome: 'Fuel Pump' },
+      { codigo: 'SX', nome: 'Shocks' },
+      { codigo: 'PQ', nome: 'Wheel Bearing' },
+      { codigo: 'RB', nome: 'Thrust Bearing' },
+      { codigo: 'GB', nome: 'Gearbox Bearing' },
+      { codigo: 'PJ', 'nome': 'CV Joint' },
+      { codigo: 'AR', 'nome': 'Stabilizer' },
+      { codigo: 'CM', 'nome': 'Master Cylinder' }
+    ];
+
+    const tipos = mapping.map(item => {
+      const cat = categorias.find(c => c.nome === item.nome);
+      return {
+        id: generateId(),
+        codigo: item.codigo,
+        descricao: item.nome,
+        categoria_id: cat ? cat.id : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    });
+
+    for (const tipo of tipos) {
+      await dbOperations.add('tipos', tipo);
+    }
+    console.log('✅ Tipos criados');
+
     // Sample Parts
     const pecas = [
       {
         id: generateId(),
-        codigo: 'AR2018',
-        nome: 'Filtro de Ar',
-        categoria_id: categorias[0].id,
-        tipo_id: null,
-        preco_custo: 50.00,
-        preco_venda: 80.00,
-        stock_atual: 15,
-        stock_minimo: 5,
-        localizacao: 'Prateleira A1',
-        fornecedor_id: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: generateId(),
-        codigo: 'AR2917',
-        nome: 'Filtro de Óleo',
-        categoria_id: categorias[0].id,
-        tipo_id: null,
-        preco_custo: 35.00,
-        preco_venda: 60.00,
-        stock_atual: 20,
-        stock_minimo: 10,
-        localizacao: 'Prateleira A2',
-        fornecedor_id: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: generateId(),
-        codigo: 'BR3045',
-        nome: 'Pastilha de Freio Dianteira',
-        categoria_id: categorias[3].id,
-        tipo_id: null,
-        preco_custo: 120.00,
-        preco_venda: 200.00,
-        stock_atual: 3,
-        stock_minimo: 5,
-        localizacao: 'Prateleira B1',
-        fornecedor_id: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: generateId(),
-        codigo: 'SU1234',
-        nome: 'Amortecedor Traseiro',
-        categoria_id: categorias[2].id,
-        tipo_id: null,
-        preco_custo: 250.00,
-        preco_venda: 400.00,
-        stock_atual: 8,
-        stock_minimo: 3,
-        localizacao: 'Prateleira C1',
-        fornecedor_id: null,
+        codigo: 'BJ-001',
+        nome: 'Pivô de Suspensão',
+        categoria_id: categorias.find(c => c.nome === 'Ball Joints')?.id,
+        tipo_id: tipos.find(t => t.codigo === 'BJ')?.id,
+        preco_custo: 150.00,
+        preco_venda: 250.00,
+        stock_atual: 10,
+        stock_minimo: 2,
+        localizacao: 'A1',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -95,18 +95,9 @@ export async function initSampleData() {
       {
         id: generateId(),
         marca: 'Toyota',
-        modelo: 'Corolla',
-        ano: 2012,
-        codigos_compativeis: ['AR2018', 'AR2917'],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      },
-      {
-        id: generateId(),
-        marca: 'Honda',
-        modelo: 'Civic',
-        ano: 2014,
-        codigos_compativeis: ['AR2018', 'BR3045'],
+        modelo: 'Hilux',
+        ano: 2015,
+        codigos_compativeis: ['BJ-001'],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -121,11 +112,9 @@ export async function initSampleData() {
     const fornecedores = [
       {
         id: generateId(),
-        nome: 'Auto Peças Ltda',
-        telefone: '(11) 98765-4321',
-        email: 'contato@autopecas.com',
-        endereco: 'Rua das Peças, 123 - São Paulo, SP',
-        observacoes: 'Fornecedor principal',
+        nome: 'Distribuidora Global',
+        telefone: '840000000',
+        email: 'vendas@global.com',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
@@ -139,6 +128,7 @@ export async function initSampleData() {
     console.log('🎉 Dados de exemplo inicializados com sucesso!');
     console.log('📊 Resumo:');
     console.log(`   - ${categorias.length} categorias`);
+    console.log(`   - ${tipos.length} tipos`);
     console.log(`   - ${pecas.length} peças`);
     console.log(`   - ${compatibilidades.length} compatibilidades`);
     console.log(`   - ${fornecedores.length} fornecedores`);
