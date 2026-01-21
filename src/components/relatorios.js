@@ -147,22 +147,25 @@ export async function initRelatorios(container) {
 
         <!-- Report Content -->
         <div id="report-content" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex items-center justify-between mb-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 id="report-title" class="text-lg font-semibold text-gray-900 dark:text-white"></h3>
-            <div class="flex gap-2">
-              <button id="btn-export-excel" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                ${t('export_excel')}
+            <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+              <button id="btn-export-excel" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+                <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="hidden xs:inline truncate">${t('export_excel')}</span>
+                <span class="xs:hidden">Excel</span>
               </button>
-              <button id="btn-export-pdf" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
-                ${t('export_pdf')}
+              <button id="btn-export-pdf" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+                <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                <span class="hidden xs:inline truncate">${t('export_pdf')}</span>
+                <span class="xs:hidden">PDF</span>
               </button>
-              <button id="btn-share-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
-                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                ${t('share') || 'Partilhar'}
+              <button id="btn-share-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
+                <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                <span class="hidden xs:inline truncate">${t('share') || 'Partilhar'}</span>
+                <span class="xs:hidden">${t('share') || 'Partilhar'}</span>
               </button>
-              <button id="btn-close-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition text-sm">
+              <button id="btn-close-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition text-sm flex items-center justify-center whitespace-nowrap">
                 ${t('close')}
               </button>
             </div>
@@ -596,20 +599,22 @@ export async function initRelatorios(container) {
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Entradas</p>
           <p class="text-3xl font-bold text-green-600 dark:text-green-400">${formatCurrency(totalGeral)}</p>
         </div>
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-900/50">
-            <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Forma de Pagamento</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Total</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">%</th></tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            ${Object.entries(porMetodo).sort((a,b) => b[1] - a[1]).map(([metodo, valor]) => `
-              <tr>
-                <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">${metodo}</td>
-                <td class="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-white">${formatCurrency(valor)}</td>
-                <td class="px-4 py-2 text-sm text-right text-gray-500">${((valor/totalGeral)*100).toFixed(1)}%</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Forma de Pagamento</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Total</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">%</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              ${Object.entries(porMetodo).sort((a,b) => b[1] - a[1]).map(([metodo, valor]) => `
+                <tr>
+                  <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">${metodo}</td>
+                  <td class="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-white">${formatCurrency(valor)}</td>
+                  <td class="px-4 py-2 text-sm text-right text-gray-500">${((valor/totalGeral)*100).toFixed(1)}%</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 
@@ -644,24 +649,26 @@ export async function initRelatorios(container) {
           <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg"><p class="text-xs font-bold text-blue-700">Classe B (15%)</p><p class="text-xl font-bold">${classificados.filter(i => i.classe==='B').length} itens</p></div>
           <div class="bg-gray-100 dark:bg-gray-900/30 p-4 rounded-lg"><p class="text-xs font-bold text-gray-700">Classe C (5%)</p><p class="text-xl font-bold">${classificados.filter(i => i.classe==='C').length} itens</p></div>
         </div>
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-900/50">
-            <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Classe</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Produto</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Receita</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">% Acum.</th></tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            ${classificados.map((item, idx) => {
-              let acumuladoAteAqui = classificados.slice(0, idx+1).reduce((s,i) => s + i.percentual, 0);
-              return `
-                <tr>
-                  <td class="px-4 py-2 text-sm"><span class="px-2 py-0.5 rounded-full font-bold ${item.classe==='A' ? 'bg-green-500 text-white' : item.classe==='B' ? 'bg-blue-500 text-white' : 'bg-gray-400 text-white'}">${item.classe}</span></td>
-                  <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">${item.peca?.nome || 'Desconhecido'}</td>
-                  <td class="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-white">${formatCurrency(item.receita)}</td>
-                  <td class="px-4 py-2 text-sm text-right text-gray-500">${acumuladoAteAqui.toFixed(1)}%</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Classe</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Produto</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Receita</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">% Acum.</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              ${classificados.map((item, idx) => {
+                let acumuladoAteAqui = classificados.slice(0, idx+1).reduce((s,i) => s + i.percentual, 0);
+                return `
+                  <tr>
+                    <td class="px-4 py-2 text-sm"><span class="px-2 py-0.5 rounded-full font-bold ${item.classe==='A' ? 'bg-green-500 text-white' : item.classe==='B' ? 'bg-blue-500 text-white' : 'bg-gray-400 text-white'}">${item.classe}</span></td>
+                    <td class="px-4 py-2 text-sm text-gray-900 dark:text-white">${item.peca?.nome || 'Desconhecido'}</td>
+                    <td class="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-white">${formatCurrency(item.receita)}</td>
+                    <td class="px-4 py-2 text-sm text-right text-gray-500">${acumuladoAteAqui.toFixed(1)}%</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 
@@ -675,20 +682,22 @@ export async function initRelatorios(container) {
       });
 
       return `
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-900/50">
-            <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Vendedor</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Vendas (Qtd)</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Volume Total</th></tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            ${Object.entries(porVendedor).sort((a,b) => b[1].total - a[1].total).map(([vend, dados]) => `
-              <tr>
-                <td class="px-4 py-2 text-sm text-gray-900 dark:text-white font-medium">${vend}</td>
-                <td class="px-4 py-2 text-sm text-right text-gray-600 dark:text-gray-400">${dados.qtd}</td>
-                <td class="px-4 py-2 text-sm text-right font-bold text-primary">${formatCurrency(dados.total)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Vendedor</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Vendas (Qtd)</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Volume Total</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              ${Object.entries(porVendedor).sort((a,b) => b[1].total - a[1].total).map(([vend, dados]) => `
+                <tr>
+                  <td class="px-4 py-2 text-sm text-gray-900 dark:text-white font-medium">${vend}</td>
+                  <td class="px-4 py-2 text-sm text-right text-gray-600 dark:text-gray-400">${dados.qtd}</td>
+                  <td class="px-4 py-2 text-sm text-right font-bold text-primary">${formatCurrency(dados.total)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `;
     }
     function renderGiroEstoque(vendas, pecas) {
@@ -704,21 +713,23 @@ export async function initRelatorios(container) {
       }).sort((a,b) => b.giro - a.giro);
 
       return `
-        <table class="w-full">
-          <thead class="bg-gray-50 dark:bg-gray-900/50">
-            <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Produto</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Vendido</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Estoque</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Índice Giro</th></tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-            ${items.slice(0, 50).map(item => `
-              <tr>
-                <td class="px-4 py-2 text-sm text-gray-900 dark:text-white font-medium">${item.nome}</td>
-                <td class="px-4 py-2 text-sm text-right text-gray-600">${item.totalVendido} un</td>
-                <td class="px-4 py-2 text-sm text-right text-gray-600">${item.stock_atual} un</td>
-                <td class="px-4 py-2 text-sm text-right font-bold ${item.giro > 1 ? 'text-green-600' : 'text-orange-500'}">${item.giro}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">Produto</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Vendido</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Estoque</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">Índice Giro</th></tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              ${items.slice(0, 50).map(item => `
+                <tr>
+                  <td class="px-4 py-2 text-sm text-gray-900 dark:text-white font-medium">${item.nome}</td>
+                  <td class="px-4 py-2 text-sm text-right text-gray-600">${item.totalVendido} un</td>
+                  <td class="px-4 py-2 text-sm text-right text-gray-600">${item.stock_atual} un</td>
+                  <td class="px-4 py-2 text-sm text-right font-bold ${item.giro > 1 ? 'text-green-600' : 'text-orange-500'}">${item.giro}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 
@@ -745,14 +756,16 @@ export async function initRelatorios(container) {
             </div>
           `).join('')}
         </div>
-        <table class="w-full">
-          <thead><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-400">Mês</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400">Total Vendas</th></tr></thead>
-          <tbody>
-            ${porMes.map((valor, idx) => `
-              <tr><td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">${mesNomes[idx]}</td><td class="px-4 py-2 text-sm text-right text-gray-900 dark:text-white">${formatCurrency(valor)}</td></tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-400">Mês</th><th class="px-4 py-2 text-right text-xs font-medium text-gray-400">Total Vendas</th></tr></thead>
+            <tbody>
+              ${porMes.map((valor, idx) => `
+                <tr><td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 font-medium">${mesNomes[idx]}</td><td class="px-4 py-2 text-sm text-right text-gray-900 dark:text-white">${formatCurrency(valor)}</td></tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `;
     }
 

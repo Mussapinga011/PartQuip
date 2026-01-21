@@ -1,4 +1,5 @@
 {
+  "name": "partquip",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
