@@ -8,6 +8,47 @@ let isSyncing = false;
 let syncInterval = null;
 let realtimeActive = false; // Track if realtime is working
 
+// Check if this is the first sync ever
+function isFirstSync() {
+  return !localStorage.getItem('partquit_first_sync_done');
+}
+
+// Mark first sync as complete
+function markFirstSyncDone() {
+  localStorage.setItem('partquit_first_sync_done', 'true');
+}
+
+// Check if a table is empty in IndexedDB
+async function isTableEmpty(tableName) {
+  try {
+    const data = await dbOperations.getAll(tableName);
+    return !data || data.length === 0;
+  } catch (error) {
+    console.error(`Error checking if ${tableName} is empty:`, error);
+    return true; // Assume empty on error to trigger sync
+  }
+}
+
+// Check if any critical table is empty
+async function needsFullSync() {
+  // If first sync never happened, definitely need full sync
+  if (isFirstSync()) {
+    console.log('🔄 First sync detected - will perform full data download');
+    return true;
+  }
+  
+  // Check if any critical table is empty
+  const criticalTables = ['categorias', 'tipos', 'pecas', 'fornecedores'];
+  for (const table of criticalTables) {
+    if (await isTableEmpty(table)) {
+      console.log(`🔄 Table ${table} is empty - will perform full sync`);
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 // Update online status
 export function updateOnlineStatus() {
   isOnline = navigator.onLine;
@@ -59,11 +100,21 @@ export function setRealtimeStatus(active) {
 // Sync data between IndexedDB and Supabase
 // fullSync: true = download all data (quota-heavy, only on startup or reconnect)
 // fullSync: false = upload pending changes only (quota-light, frequent)
+// If fullSync is false but tables are empty, it will auto-upgrade to full sync
 export async function syncData(fullSync = false) {
   if (!isOnline || isSyncing) return;
 
   isSyncing = true;
   updateSyncStatusUI();
+  
+  // Smart sync: check if we need full sync even if not requested
+  if (!fullSync) {
+    const needsFull = await needsFullSync();
+    if (needsFull) {
+      console.log('⚠️ Auto-upgrading to full sync because tables are empty');
+      fullSync = true;
+    }
+  }
 
   try {
     // 1. UPLOAD: Process sync queue (upload local changes) - ALWAYS DO THIS
@@ -167,9 +218,13 @@ export async function syncData(fullSync = false) {
         console.error('Sync error for vendas:', error);
       }
       
-      console.log('✅ Full sync completed');
+      // Mark first sync as done
+      markFirstSyncDone();
+      console.log('✅ Full sync completed - all data downloaded');
     } else if (pending.length > 0) {
       console.log('✅ Upload sync completed');
+    } else {
+      console.log('✅ Sync check completed - no changes needed');
     }
 
     // Clean up synced items

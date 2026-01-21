@@ -50,7 +50,7 @@ export async function initAbastecimento(container) {
       </div>
 
       <!-- Modal Novo Abastecimento -->
-      <div id="modal-abastecimento" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div id="modal-abastecimento" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full p-6">
           <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('stock_entry')}</h3>
           <form id="form-abastecimento" class="space-y-4">

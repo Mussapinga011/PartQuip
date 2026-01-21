@@ -57,7 +57,7 @@ export async function initHierarquia(container) {
       </div>
 
       <!-- Modal Nova Categoria -->
-      <div id="modal-categoria" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div id="modal-categoria" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
           <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('new_category')}</h3>
           <form id="form-categoria" class="space-y-4">
@@ -78,7 +78,7 @@ export async function initHierarquia(container) {
       </div>
 
       <!-- Modal Novo Tipo -->
-      <div id="modal-tipo" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div id="modal-tipo" class="hidden fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
           <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">${t('new_type')}</h3>
           <form id="form-tipo" class="space-y-4">

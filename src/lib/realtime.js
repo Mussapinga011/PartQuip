@@ -1,11 +1,11 @@
-// Real-time Data Synchronization Layer
-// Extends the sync-enhanced.js with live updates from Supabase Realtime
-
 import { supabase } from './supabase.js';
 import { dbOperations } from './db.js';
 import { addNotification } from './notifications.js';
+import { setRealtimeStatus } from './sync.js';
 
 let channel = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 3;
 
 /**
  * Initialize Real-time Subscriptions
@@ -26,9 +26,30 @@ export function initRealtime(onDataChange) {
       { event: '*', schema: 'public' },
       handleRealtimeUpdate
     )
-    .subscribe((status) => {
+    .subscribe((status, err) => {
       if (status === 'SUBSCRIBED') {
         console.log('✅ Real-time Subscriptions active');
+        setRealtimeStatus(true);
+        reconnectAttempts = 0; // Reset on success
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('❌ Real-time subscription error:', err);
+        setRealtimeStatus(false);
+        
+        // Retry logic
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++;
+          console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+          setTimeout(() => {
+            stopRealtime();
+            initRealtime(onDataChange);
+          }, 2000 * reconnectAttempts); // Exponential backoff
+        } else {
+          console.error('❌ Max reconnect attempts reached. Realtime disabled.');
+          addNotification('warning', 'Sincronização em tempo real desativada. Os dados serão atualizados periodicamente.');
+        }
+      } else if (status === 'CLOSED') {
+        console.log('📡 Real-time connection closed');
+        setRealtimeStatus(false);
       }
     });
 
@@ -79,6 +100,7 @@ export function initRealtime(onDataChange) {
 
     } catch (error) {
       console.error('[Realtime] Error processing update:', error);
+      console.error('[Realtime] Failed payload:', { eventType, table, newRecord, oldRecord });
     }
   }
 }

@@ -147,25 +147,22 @@ export async function initRelatorios(container) {
 
         <!-- Report Content -->
         <div id="report-content" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div class="flex items-center justify-between flex-wrap gap-4 mb-6">
             <h3 id="report-title" class="text-lg font-semibold text-gray-900 dark:text-white"></h3>
-            <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-              <button id="btn-export-excel" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
-                <svg class="w-4 h-4 text-green-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span class="hidden xs:inline truncate">${t('export_excel')}</span>
-                <span class="xs:hidden">Excel</span>
+            <div class="flex flex-wrap gap-2">
+              <button id="btn-export-excel" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                ${t('export_excel')}
               </button>
-              <button id="btn-export-pdf" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
-                <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
-                <span class="hidden xs:inline truncate">${t('export_pdf')}</span>
-                <span class="xs:hidden">PDF</span>
+              <button id="btn-export-pdf" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                ${t('export_pdf')}
               </button>
-              <button id="btn-share-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap">
-                <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
-                <span class="hidden xs:inline truncate">${t('share') || 'Partilhar'}</span>
-                <span class="xs:hidden">${t('share') || 'Partilhar'}</span>
+              <button id="btn-share-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition flex items-center gap-2 text-sm">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                ${t('share') || 'Partilhar'}
               </button>
-              <button id="btn-close-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition text-sm flex items-center justify-center whitespace-nowrap">
+              <button id="btn-close-report" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 transition text-sm">
                 ${t('close')}
               </button>
             </div>
@@ -519,7 +516,7 @@ export async function initRelatorios(container) {
       const margemValue = totalVenda > 0 ? ((lucro / totalVenda) * 100).toFixed(2) : 0;
 
       return `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${t('total_cost')}</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">${formatCurrency(totalCusto)}</p>
@@ -644,7 +641,7 @@ export async function initRelatorios(container) {
       });
 
       return `
-        <div class="mb-6 grid grid-cols-3 gap-4">
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg"><p class="text-xs font-bold text-green-700">Classe A (80%)</p><p class="text-xl font-bold">${classificados.filter(i => i.classe==='A').length} itens</p></div>
           <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg"><p class="text-xs font-bold text-blue-700">Classe B (15%)</p><p class="text-xl font-bold">${classificados.filter(i => i.classe==='B').length} itens</p></div>
           <div class="bg-gray-100 dark:bg-gray-900/30 p-4 rounded-lg"><p class="text-xs font-bold text-gray-700">Classe C (5%)</p><p class="text-xl font-bold">${classificados.filter(i => i.classe==='C').length} itens</p></div>
