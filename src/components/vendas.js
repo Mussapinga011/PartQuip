@@ -4,6 +4,7 @@ import { generateId, formatCurrency, formatDate, showToast, confirm } from '../u
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
 import { notifyVendaCreated, notifyEstoqueBaixo } from '../lib/notifications.js';
+import { generatePDF } from '../utils/pdfHelper.js';
 
 export async function initVendas(container) {
   try {
@@ -49,23 +50,25 @@ export async function initVendas(container) {
             <div>
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">${t('recent_sales')}</h3>
               <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                <table class="w-full">
-                  <thead class="bg-gray-50 dark:bg-gray-900/50">
-                    <tr>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('code')}</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('name')}</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('price')}</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('quantity')}</th>
-                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('subtotal')}</th>
-                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">${t('action')}</th>
-                    </tr>
-                  </thead>
-                  <tbody id="itens-venda" class="divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr>
-                      <td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_items_added') || 'Nenhum item adicionado'}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                  <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
+                      <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('code')}</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('name')}</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('price')}</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('quantity')}</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('subtotal')}</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">${t('action')}</th>
+                      </tr>
+                    </thead>
+                    <tbody id="itens-venda" class="divide-y divide-gray-200 dark:border-gray-700">
+                      <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_items_added') || 'Nenhum item adicionado'}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
@@ -628,32 +631,18 @@ export async function initVendas(container) {
       };
 
       document.getElementById('btn-export-vendas-pdf').onclick = async () => {
-        const { jsPDF } = window.jspdf;
-        const html2canvas = window.html2canvas;
         const historyTable = document.querySelector('#historico-venda-view .overflow-x-auto');
         
-        if (!jsPDF || !html2canvas) {
-           showToast('Biblioteca de PDF não carregada', 'error');
-           return;
+        if (!historyTable) {
+            showToast('Tabela não encontrada', 'error');
+            return;
         }
 
-        try {
-          const canvas = await html2canvas(historyTable, { scale: 2 });
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth();
-          const imgProps = pdf.getImageProperties(imgData);
-          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-          pdf.setFontSize(16);
-          pdf.text(`${t('history')} - ${currentYearFilter}`, 15, 15);
-          pdf.addImage(imgData, 'PNG', 0, 20, pdfWidth, pdfHeight);
-          pdf.save(`Historico_Vendas_${currentYearFilter}.pdf`);
-          showToast('PDF gerado com sucesso!', 'success');
-        } catch (error) {
-          console.error('Erro PDF:', error);
-          showToast('Erro ao gerar PDF', 'error');
-        }
+        await generatePDF(
+             historyTable, 
+             `Historico_Vendas_${currentYearFilter}`, 
+             `${t('history')} - ${currentYearFilter}`
+        );
       };
 
       document.getElementById('btn-export-vendas-tudo').onclick = async () => {

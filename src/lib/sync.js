@@ -138,9 +138,14 @@ export async function syncData(fullSync = false) {
           }
         }
 
-        // Remove 'total' from data if it's a generated column in Supabase (vendas, abastecimentos)
+        // Remove generated columns from data before syncing
         if (tableName.startsWith('vendas_') || tableName === 'abastecimentos') {
           delete data.total;
+        }
+        
+        // Remove 'fts' (full-text search) if it exists - it's a generated column
+        if (data.fts !== undefined) {
+          delete data.fts;
         }
 
         switch (item.operation) {

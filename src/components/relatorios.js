@@ -2,6 +2,7 @@
 import { dbOperations } from '../lib/db.js';
 import { formatCurrency, formatDate, showToast } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
+import { generatePDF } from '../utils/pdfHelper.js';
 
 export async function initRelatorios(container) {
   try {
@@ -206,42 +207,19 @@ export async function initRelatorios(container) {
     });
 
     document.getElementById('btn-export-pdf')?.addEventListener('click', async () => {
-      const { jsPDF } = window.jspdf;
-      const html2canvas = window.html2canvas;
       const reportContainer = document.getElementById('report-data');
       const title = document.getElementById('report-title').textContent;
 
-      if (!reportContainer || !html2canvas || !jsPDF) {
-        showToast('Biblioteca de PDF não carregada', 'error');
+      if (!reportContainer) {
+        showToast('Conteúdo do relatório não encontrado', 'error');
         return;
       }
 
-      try {
-        const canvas = await html2canvas(reportContainer, {
-          scale: 2,
-          logging: false,
-          useCORS: true
-        });
-        
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        
-        pdf.setFontSize(18);
-        pdf.text(title, 15, 15);
-        pdf.setFontSize(10);
-        pdf.text(`Gerado em: ${formatDate(new Date(), 'dd/MM/yyyy HH:mm')}`, 15, 22);
-        
-        pdf.addImage(imgData, 'PNG', 0, 30, pdfWidth, pdfHeight);
-        pdf.save(`Relatorio_${title.replace(/\s+/g, '_')}.pdf`);
-        
-        showToast('PDF gerado com sucesso!', 'success');
-      } catch (error) {
-        console.error('Erro ao gerar PDF:', error);
-        showToast('Erro ao gerar PDF', 'error');
-      }
+      await generatePDF(
+        reportContainer,
+        `Relatorio_${title.replace(/\s+/g, '_')}`,
+        title
+      );
     });
 
     function generateReport(type, pecas, vendas, categorias) {
