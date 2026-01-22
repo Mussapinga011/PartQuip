@@ -2,7 +2,7 @@
 import './style.css';
 import { supabaseHelpers } from './lib/supabase.js';
 import { initDB } from './lib/db.js';
-import { initSync, stopSync } from './lib/sync.js';
+import { initSync, stopSync, forceFullSync } from './lib/sync.js';
 import { showToast, confirm, showAlert } from './utils/helpers.js';
 import { t, setLanguage, getCurrentLang } from './lib/i18n.js';
 import { initNotifications } from './lib/notifications.js';
@@ -186,6 +186,37 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
     showToast(t('logout_error') || 'Erro ao fazer logout', 'error');
   }
 });
+
+// Handle manual sync
+document.getElementById('manual-sync-btn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('manual-sync-btn');
+  if (!btn) return;
+  
+  // Disable button and show loading state
+  btn.disabled = true;
+  btn.classList.add('opacity-50', 'cursor-not-allowed');
+  const icon = btn.querySelector('svg');
+  if (icon) icon.classList.add('animate-spin');
+  
+  try {
+    const result = await forceFullSync();
+    
+    if (result.success) {
+      showToast(result.message, 'success');
+    } else {
+      showToast(result.message, 'warning');
+    }
+  } catch (error) {
+    console.error('Manual sync error:', error);
+    showToast('Erro ao sincronizar. Tente novamente.', 'error');
+  } finally {
+    // Re-enable button
+    btn.disabled = false;
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    if (icon) icon.classList.remove('animate-spin');
+  }
+});
+
 
 // Profile Management
 const profileModal = document.getElementById('profile-modal');

@@ -264,6 +264,23 @@ export function initSync() {
   }
 }
 
+// Force a full sync manually (called by user button)
+export async function forceFullSync() {
+  if (!isOnline) {
+    console.warn('⚠️ Cannot sync - device is offline');
+    return { success: false, message: 'Dispositivo offline. Conecte-se à internet para sincronizar.' };
+  }
+  
+  if (isSyncing) {
+    console.warn('⚠️ Sync already in progress');
+    return { success: false, message: 'Sincronização já em andamento. Aguarde...' };
+  }
+  
+  console.log('🔄 Manual full sync triggered by user');
+  await syncData(true); // Force full sync
+  return { success: true, message: 'Sincronização completa realizada com sucesso!' };
+}
+
 // Stop sync
 export function stopSync() {
   if (syncInterval) {
