@@ -8,15 +8,6 @@ let isSyncing = false;
 let syncInterval = null;
 let realtimeActive = false; // Track if realtime is working
 
-// Check if this is the first sync ever
-function isFirstSync() {
-  return !localStorage.getItem('partquit_first_sync_done');
-}
-
-// Mark first sync as complete
-function markFirstSyncDone() {
-  localStorage.setItem('partquit_first_sync_done', 'true');
-}
 
 // Check if a table is empty in IndexedDB
 async function isTableEmpty(tableName) {
@@ -30,15 +21,11 @@ async function isTableEmpty(tableName) {
 }
 
 // Check if any critical table is empty
+// ALWAYS checks tables, regardless of first sync flag
 async function needsFullSync() {
-  // If first sync never happened, definitely need full sync
-  if (isFirstSync()) {
-    console.log('🔄 First sync detected - will perform full data download');
-    return true;
-  }
-  
   // Check if any critical table is empty
   const criticalTables = ['categorias', 'tipos', 'pecas', 'fornecedores'];
+  
   for (const table of criticalTables) {
     if (await isTableEmpty(table)) {
       console.log(`🔄 Table ${table} is empty - will perform full sync`);
@@ -46,6 +33,7 @@ async function needsFullSync() {
     }
   }
   
+  console.log('✅ All critical tables have data - no full sync needed');
   return false;
 }
 
@@ -218,8 +206,6 @@ export async function syncData(fullSync = false) {
         console.error('Sync error for vendas:', error);
       }
       
-      // Mark first sync as done
-      markFirstSyncDone();
       console.log('✅ Full sync completed - all data downloaded');
     } else if (pending.length > 0) {
       console.log('✅ Upload sync completed');
