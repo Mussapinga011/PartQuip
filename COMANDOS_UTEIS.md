@@ -50,6 +50,13 @@ git add .
 # Commit
 git commit -m "feat: descrição da feature"
 git commit -m "fix: descrição do bug fix"
+git commit -m "refactor: refatoração sem alteração de funcionalidade"
+git commit -m "perf: melhoria de desempenho"
+git commit -m "test: adicionar testes"
+git commit -m "chore: tarefas administrativas"
+git commit -m "style: atualização de estilos"
+git commit -m "ci: atualização de configurações de CI/CD"
+git commit -m "build: atualização de configurações de build"
 git commit -m "docs: atualização de documentação"
 
 # Push
