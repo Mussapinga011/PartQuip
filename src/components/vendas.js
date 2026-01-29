@@ -147,27 +147,54 @@ export async function initVendas(container) {
 
         <!-- Historico View -->
         <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="flex items-center gap-4">
+          
+          <!-- Filtros Robustos -->
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700 space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('history')}</h3>
+              
               <div class="flex gap-2">
-                <button id="btn-export-vendas-excel" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-green-600 transition" title="Exportar Ano (Excel)">
+                <button id="btn-export-vendas-excel" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-green-600 transition" title="Exportar (Excel)">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </button>
-                <button id="btn-export-vendas-pdf" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 transition" title="Exportar Ano (PDF)">
+                <button id="btn-export-vendas-pdf" class="p-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-red-600 transition" title="Exportar (PDF)">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
-                </button>
-                <button id="btn-export-vendas-tudo" class="px-3 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-xs font-bold rounded-lg transition border border-gray-300 dark:border-gray-600 flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                  Exportar Histórico Completo
                 </button>
               </div>
             </div>
-            <!-- Year Tabs -->
-            <div id="historico-anos" class="flex flex-wrap gap-2">
-              <!-- Tabs injected via JS -->
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Data Início</label>
+                <input type="date" id="filtro-data-inicio" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Data Fim</label>
+                <input type="date" id="filtro-data-fim" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Buscar (Cliente/Venda/Peça)</label>
+                <input type="text" id="filtro-busca" placeholder="Digite para buscar..." class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Forma Pagamento</label>
+                <select id="filtro-pagamento" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                  <option value="">Todas</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="M-Pesa">M-Pesa</option>
+                  <option value="E-mola">E-mola</option>
+                  <option value="M-Kesh">M-Kesh</option>
+                  <option value="Cartão de Crédito">Cartão</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button id="btn-aplicar-filtros" class="w-full px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition shadow">
+                  Aplicar Filtros
+                </button>
+              </div>
             </div>
           </div>
+
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead class="bg-gray-50 dark:bg-gray-900/50">
@@ -188,6 +215,69 @@ export async function initVendas(container) {
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <!-- Edit Sale Modal -->
+      <div id="edit-sale-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full overflow-hidden">
+          <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+             <h3 class="text-lg font-bold text-gray-900 dark:text-white">Editar Venda</h3>
+             <button id="close-edit-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+             </button>
+          </div>
+          <form id="form-edit-venda" class="p-6 space-y-4">
+             <input type="hidden" id="edit-venda-id">
+             
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Peça (Apenas Leitura)</label>
+               <input type="text" id="edit-venda-peca" disabled class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-500 rounded-lg">
+             </div>
+
+             <div class="grid grid-cols-2 gap-4">
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantidade</label>
+                  <input type="number" id="edit-venda-qtd" min="1" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+               </div>
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Total (MT)</label>
+                  <input type="number" id="edit-venda-total" step="0.01" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+               </div>
+             </div>
+
+             <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente / Veículo</label>
+                <input type="text" id="edit-venda-cliente" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+             </div>
+
+             <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data</label>
+                  <input type="datetime-local" id="edit-venda-data" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Pagamento</label>
+                  <select id="edit-venda-pagamento" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="M-Pesa">M-Pesa</option>
+                    <option value="E-mola">E-mola</option>
+                    <option value="M-Kesh">M-Kesh</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  </select>
+                </div>
+             </div>
+
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Observações</label>
+               <input type="text" id="edit-venda-obs" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+             </div>
+             
+             <div class="pt-4 flex justify-end gap-3">
+               <button type="button" id="btn-cancel-edit" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">Cancelar</button>
+               <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg">Salvar Alterações</button>
+             </div>
+          </form>
         </div>
       </div>
     `;
@@ -550,47 +640,101 @@ export async function initVendas(container) {
       document.getElementById('btn-ver-historico').classList.remove('hidden');
     });
 
-    // Render Historico with Year Tabs
+    // Initialize Filters
+    const hoje = new Date();
+    document.getElementById('filtro-data-inicio').value = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0]; // First day of month
+    document.getElementById('filtro-data-fim').value = hoje.toISOString().split('T')[0];
+
+    document.getElementById('btn-aplicar-filtros').addEventListener('click', renderHistorico);
+
+    // Edit Modal Logic
+    const editModal = document.getElementById('edit-sale-modal');
+    const formEdit = document.getElementById('form-edit-venda');
+
+    document.getElementById('close-edit-modal').addEventListener('click', () => {
+       editModal.classList.add('hidden');
+    });
+
+    document.getElementById('btn-cancel-edit').addEventListener('click', () => {
+       editModal.classList.add('hidden');
+    });
+
+    formEdit.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-venda-id').value;
+        const novaQtd = parseInt(document.getElementById('edit-venda-qtd').value);
+        const novoTotal = parseFloat(document.getElementById('edit-venda-total').value);
+        const novoCliente = document.getElementById('edit-venda-cliente').value;
+        const novaObs = document.getElementById('edit-venda-obs').value;
+        const novoPagamento = document.getElementById('edit-venda-pagamento').value;
+        const novaData = document.getElementById('edit-venda-data').value;
+
+        // Calcular preco_unitario baseado no total e quantidade
+        const precoUnitario = novaQtd > 0 ? (novoTotal / novaQtd) : 0;
+
+        await window.vendaActions.salvarEdicaoVenda(id, {
+            quantidade: novaQtd,
+            preco_unitario: precoUnitario,
+            cliente_veiculo: novoCliente,
+            observacoes: novaObs,
+            forma_pagamento: novoPagamento,
+            created_at: novaData
+        });
+
+        editModal.classList.add('hidden');
+    });
+
+
+    // Render Historico with Filters
     async function renderHistorico() {
       const tbody = document.getElementById('historico-tbody');
-      const tabsContainer = document.getElementById('historico-anos');
-      
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-gray-500 dark:text-gray-400">${t('loading') || 'Carregando...'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-8 text-gray-500 dark:text-gray-400">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+            ${t('loading') || 'Carregando...'}
+        </div>
+      </td></tr>`;
       
       const allVendas = await dbOperations.getAll('vendas');
       
-      // Calculate available years
-      const years = [...new Set(allVendas.map(v => new Date(v.created_at).getFullYear()))].sort((a, b) => b - a);
-      if (!years.includes(new Date().getFullYear())) {
-        years.unshift(new Date().getFullYear());
-      }
+      // Get filters
+      const dataInicio = document.getElementById('filtro-data-inicio').value;
+      const dataFim = document.getElementById('filtro-data-fim').value;
+      const termo = document.getElementById('filtro-busca').value.toLowerCase().trim();
+      const pagamento = document.getElementById('filtro-pagamento').value;
 
-      // Render Tabs
-      tabsContainer.innerHTML = years.map(year => `
-        <button 
-          class="year-tab px-4 py-1.5 rounded-full text-sm font-medium transition ${year === currentYearFilter ? 'bg-primary text-white shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}"
-          data-year="${year}"
-        >
-          ${year}
-        </button>
-      `).join('');
+      // Filter
+      let filteredVendas = allVendas.filter(v => {
+          // Date Filter
+          if (dataInicio) {
+              const d = new Date(v.created_at).toISOString().split('T')[0];
+              if (d < dataInicio) return false;
+          }
+          if (dataFim) {
+              const d = new Date(v.created_at).toISOString().split('T')[0];
+              if (d > dataFim) return false;
+          }
 
-      // Add click handlers to tabs
-      tabsContainer.querySelectorAll('.year-tab').forEach(btn => {
-        btn.addEventListener('click', () => {
-          currentYearFilter = parseInt(btn.dataset.year);
-          renderHistorico(); // Re-render to update tabs and filtering
-        });
+          // Payment Filter
+          if (pagamento && v.forma_pagamento !== pagamento) return false;
+
+          // Search Filter (Recursive check on multiple fields)
+          if (termo) {
+              const searchStr = `${v.numero_venda} ${v.cliente_nome || ''} ${v.cliente_veiculo || ''} ${v.peca_nome || ''} ${v.peca_codigo || ''}`.toLowerCase();
+              if (!searchStr.includes(termo)) return false;
+          }
+
+          return true;
       });
-
-      // Filter by selected year
-      const filteredVendas = allVendas.filter(v => new Date(v.created_at).getFullYear() === currentYearFilter);
       
       // Sort by created_at desc
       filteredVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
       if (filteredVendas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">${t('no_records_year') || 'Nenhum registro encontrado para este ano.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+            <p class="text-lg font-medium">Nenhum registro encontrado</p>
+            <p class="text-sm">Tente ajustar os filtros de busca.</p>
+        </td></tr>`;
         return;
       }
 
@@ -616,8 +760,16 @@ export async function initVendas(container) {
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
               ${!isCancelled ? `
-                <button class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 ml-3 transition" onclick="window.vendaActions.cancelarVenda('${v.id}')">${t('cancel') || 'Cancelar'}</button>
+                <div class="flex items-center justify-end gap-2">
+                    <button class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition" onclick="window.vendaActions.editarVenda('${v.id}')" title="Editar">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                    <button class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 transition" onclick="window.vendaActions.cancelarVenda('${v.id}')" title="Cancelar">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
               ` : '-'}
             </td>
           </tr>
@@ -638,45 +790,18 @@ export async function initVendas(container) {
             return;
         }
 
+        const dataInicio = document.getElementById('filtro-data-inicio').value;
+        const dataFim = document.getElementById('filtro-data-fim').value;
+        const periodo = dataInicio ? (dataFim ? `${formatDate(dataInicio)} a ${formatDate(dataFim)}` : `Desde ${formatDate(dataInicio)}`) : 'Completo';
+
         await generatePDF(
              historyTable, 
-             `Historico_Vendas_${currentYearFilter}`, 
-             `${t('history')} - ${currentYearFilter}`
+             `Historico_Vendas_${periodo.replace(/[\/ ]/g, '_')}`, 
+             `${t('history')} - ${periodo}`
         );
       };
 
-      document.getElementById('btn-export-vendas-tudo').onclick = async () => {
-        const vendas = await dbOperations.getAll('vendas');
-        if (vendas.length === 0) {
-          showToast('Nenhum dado para exportar', 'error');
-          return;
-        }
-
-        // CSV All
-        const headers = ["Data", "Nº Venda", "Peça", "Qtd", "Total", "Pagamento", "Status"];
-        const csvContent = [
-          headers.join(','),
-          ...vendas.map(v => [
-            formatDate(v.created_at, 'dd/MM/yyyy HH:mm'),
-            v.numero_venda || '-',
-            `"${v.peca_codigo || ''} - ${v.peca_nome || ''}"`,
-            v.quantidade,
-            v.total,
-            v.forma_pagamento,
-            v.status
-          ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', 'Historico_Vendas_Completo.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        showToast('Exportação completa (CSV) concluída!', 'success');
-      };
+      // Note: btn-export-vendas-tudo was removed from UI in favor of robust filters
     }
 
     function exportToCSV(table, filename) {
@@ -697,6 +822,7 @@ export async function initVendas(container) {
     }
     
     // Add Cancel Action to Global Scope
+    // Add Edit and Cancel Actions to Global Scope
     window.vendaActions.cancelarVenda = async (id) => {
       if (!await confirm(t('confirm_cancel_sale') || 'Tem certeza que deseja cancelar esta venda? O stock será restaurado.')) return;
 
@@ -726,6 +852,80 @@ export async function initVendas(container) {
         console.error('Erro ao cancelar venda:', error);
         showToast(t('sale_cancel_error') || 'Erro ao cancelar venda', 'error');
       }
+    };
+
+    window.vendaActions.editarVenda = async (id) => {
+        try {
+            const venda = await dbOperations.getById('vendas', id);
+            if (!venda) return;
+            
+            document.getElementById('edit-venda-id').value = venda.id;
+            document.getElementById('edit-venda-peca').value = `${venda.peca_codigo} - ${venda.peca_nome}`;
+            document.getElementById('edit-venda-qtd').value = venda.quantidade;
+            document.getElementById('edit-venda-total').value = venda.total;
+            document.getElementById('edit-venda-cliente').value = venda.cliente_veiculo || '';
+            document.getElementById('edit-venda-obs').value = venda.observacoes || '';
+            document.getElementById('edit-venda-pagamento').value = venda.forma_pagamento || 'Dinheiro';
+            
+            // Format datetime local
+            const date = new Date(venda.created_at);
+            date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+            document.getElementById('edit-venda-data').value = date.toISOString().slice(0, 16);
+
+            // Store original qty for logic
+            document.getElementById('edit-venda-qtd').dataset.original = venda.quantidade;
+
+            document.getElementById('edit-sale-modal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error opening edit', error);
+        }
+    };
+
+    window.vendaActions.salvarEdicaoVenda = async (id, novosDados) => {
+        try {
+            const venda = await dbOperations.getById('vendas', id);
+            if (!venda) throw new Error('Venda não encontrada');
+            
+            const oldQtd = venda.quantidade;
+            const newQtd = novosDados.quantidade;
+            
+            // Validate Stock if Qty Changed
+            if (newQtd !== oldQtd && venda.status !== 'cancelada') {
+                const peca = await dbOperations.getById('pecas', venda.peca_id);
+                const diff = newQtd - oldQtd; // If positive, we need more stock. If negative, we return stock.
+                
+                if (diff > 0) {
+                   if (peca.stock_atual < diff) {
+                       showToast(`Stock insuficiente para aumentar quantidade. Disponível: ${peca.stock_atual}`, 'error');
+                       return;
+                   }
+                   peca.stock_atual -= diff;
+                } else {
+                   peca.stock_atual += Math.abs(diff); // Add back the difference
+                }
+
+                peca.updated_at = new Date().toISOString();
+                await dbOperations.put('pecas', peca);
+                await syncQueue.add('update', 'pecas', peca);
+            }
+
+            // Update Venda
+            const vendaAtualizada = { 
+                ...venda, 
+                ...novosDados, 
+                updated_at: new Date().toISOString() 
+            };
+            
+            await dbOperations.put('vendas', vendaAtualizada);
+            await syncQueue.add('update', 'vendas', vendaAtualizada);
+
+            showToast('Venda atualizada com sucesso!', 'success');
+            renderHistorico();
+
+        } catch (error) {
+            console.error('Erro ao editar venda:', error);
+            showToast('Erro ao atualizar venda', 'error');
+        }
     };
 
   } catch (error) {

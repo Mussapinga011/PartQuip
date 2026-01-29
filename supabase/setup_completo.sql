@@ -15,10 +15,8 @@ ALTER TABLE compatibilidade_veiculos ADD COLUMN IF NOT EXISTS updated_at TIMESTA
 ALTER TABLE fornecedores ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE abastecimentos ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
--- Adicionar em tabelas de vendas (ajuste os anos conforme necessário)
-ALTER TABLE vendas_2024 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE vendas_2025 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-ALTER TABLE vendas_2026 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+-- Adicionar em tabela de vendas unificada
+ALTER TABLE vendas ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 -- ============================================
 -- PARTE 2: CRIAR FUNÇÃO DE TRIGGER
@@ -68,19 +66,9 @@ CREATE TRIGGER update_abastecimentos_updated_at
   BEFORE UPDATE ON abastecimentos
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-DROP TRIGGER IF EXISTS update_vendas_2024_updated_at ON vendas_2024;
-CREATE TRIGGER update_vendas_2024_updated_at 
-  BEFORE UPDATE ON vendas_2024
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_vendas_2025_updated_at ON vendas_2025;
-CREATE TRIGGER update_vendas_2025_updated_at 
-  BEFORE UPDATE ON vendas_2025
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-DROP TRIGGER IF EXISTS update_vendas_2026_updated_at ON vendas_2026;
-CREATE TRIGGER update_vendas_2026_updated_at 
-  BEFORE UPDATE ON vendas_2026
+DROP TRIGGER IF EXISTS update_vendas_updated_at ON vendas;
+CREATE TRIGGER update_vendas_updated_at 
+  BEFORE UPDATE ON vendas
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
@@ -105,8 +93,7 @@ BEGIN
   -- Extrair dados da venda
   v_peca_id := (sale_data->>'peca_id')::UUID;
   v_quantidade := (sale_data->>'quantidade')::INTEGER;
-  v_year := EXTRACT(YEAR FROM (sale_data->>'created_at')::TIMESTAMP);
-  v_table_name := 'vendas_' || v_year::TEXT;
+  v_table_name := 'vendas';
   
   -- Verificar estoque atual com lock para evitar race conditions
   SELECT estoque INTO v_estoque_atual
@@ -197,9 +184,7 @@ ALTER TABLE pecas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE compatibilidade_veiculos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fornecedores ENABLE ROW LEVEL SECURITY;
 ALTER TABLE abastecimentos ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vendas_2024 ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vendas_2025 ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vendas_2026 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vendas ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- PARTE 6: POLÍTICAS RLS - CATEGORIAS
@@ -316,47 +301,18 @@ USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
 -- ============================================
--- PARTE 12: POLÍTICAS RLS - VENDAS
+-- PARTE 12: POLÍTICAS RLS - VENDAS (UNIFICADA)
 -- ============================================
 
--- Vendas 2024
-DROP POLICY IF EXISTS "Usuários autenticados podem ler vendas 2024" ON vendas_2024;
-CREATE POLICY "Usuários autenticados podem ler vendas 2024"
-ON vendas_2024 FOR SELECT
+DROP POLICY IF EXISTS "Usuários autenticados podem ler vendas" ON vendas;
+CREATE POLICY "Usuários autenticados podem ler vendas"
+ON vendas FOR SELECT
 TO authenticated
 USING (true);
 
-DROP POLICY IF EXISTS "Usuários podem gerenciar suas próprias vendas 2024" ON vendas_2024;
-CREATE POLICY "Usuários podem gerenciar suas próprias vendas 2024"
-ON vendas_2024 FOR ALL
-TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
-
--- Vendas 2025
-DROP POLICY IF EXISTS "Usuários autenticados podem ler vendas 2025" ON vendas_2025;
-CREATE POLICY "Usuários autenticados podem ler vendas 2025"
-ON vendas_2025 FOR SELECT
-TO authenticated
-USING (true);
-
-DROP POLICY IF EXISTS "Usuários podem gerenciar suas próprias vendas 2025" ON vendas_2025;
-CREATE POLICY "Usuários podem gerenciar suas próprias vendas 2025"
-ON vendas_2025 FOR ALL
-TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
-
--- Vendas 2026
-DROP POLICY IF EXISTS "Usuários autenticados podem ler vendas 2026" ON vendas_2026;
-CREATE POLICY "Usuários autenticados podem ler vendas 2026"
-ON vendas_2026 FOR SELECT
-TO authenticated
-USING (true);
-
-DROP POLICY IF EXISTS "Usuários podem gerenciar suas próprias vendas 2026" ON vendas_2026;
-CREATE POLICY "Usuários podem gerenciar suas próprias vendas 2026"
-ON vendas_2026 FOR ALL
+DROP POLICY IF EXISTS "Usuários podem gerenciar suas próprias vendas" ON vendas;
+CREATE POLICY "Usuários podem gerenciar suas próprias vendas"
+ON vendas FOR ALL
 TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());

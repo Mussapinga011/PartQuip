@@ -118,11 +118,11 @@ export async function syncData(fullSync = false) {
         let tableName = item.table;
         let data = { ...item.data };
 
-        // Handle annual vendas tables mapping
-        if (tableName === 'vendas') {
-          const year = new Date(data.created_at).getFullYear() || new Date().getFullYear();
-          tableName = `vendas_${year}`;
-        }
+        // Handle annual vendas tables mapping - REMOVED (Unified DB)
+        // if (tableName === 'vendas') {
+        //   const year = new Date(data.created_at).getFullYear() || new Date().getFullYear();
+        //   tableName = `vendas_${year}`;
+        // }
 
         // Handle legacy column name mapping for abastecimentos if present in queue
         if (tableName === 'abastecimentos' && data.custo_unitario !== undefined) {
@@ -139,7 +139,7 @@ export async function syncData(fullSync = false) {
         }
 
         // Remove generated columns from data before syncing
-        if (tableName.startsWith('vendas_') || tableName === 'abastecimentos') {
+        if (tableName === 'vendas' || tableName.startsWith('vendas_') || tableName === 'abastecimentos') {
           delete data.total;
         }
         
@@ -153,6 +153,28 @@ export async function syncData(fullSync = false) {
             await supabaseHelpers.insert(tableName, data);
             break;
           case 'update':
+            // Conflict Resolution: Check if server has newer data
+            // Get current server version
+            const { data: serverRecord, error: fetchError } = await supabase
+              .from(tableName)
+              .select('updated_at')
+              .eq('id', data.id)
+              .single();
+
+            if (!fetchError && serverRecord && serverRecord.updated_at) {
+              const serverTime = new Date(serverRecord.updated_at).getTime();
+              const localEditTime = new Date(item.timestamp).getTime();
+
+              // If server data is newer than our local edit time (tolerance 1000ms)
+              if (serverTime > localEditTime + 1000) {
+                console.warn(`⚔️ Conflict detected for ${tableName} ID ${data.id}: Server is newer. Skipping overwrite.`);
+                console.warn(`Server: ${new Date(serverTime).toISOString()} vs Local Edit: ${new Date(localEditTime).toISOString()}`);
+                // Skip update, mark as synced to remove from queue
+                // Ideally we should notify user, but for now we prioritize server integrity
+                break; 
+              }
+            }
+
             await supabaseHelpers.update(tableName, data.id, data);
             break;
           case 'delete':
@@ -163,6 +185,11 @@ export async function syncData(fullSync = false) {
       } catch (error) {
         const errorMsg = error.message || (typeof error === 'string' ? error : 'Erro desconhecido');
         console.error(`Sync error for ${item.table} (${item.operation}):`, errorMsg, error.details || '');
+        
+        // Mostrar erro ao usuário se for uma operação importante
+        if (item.operation === 'update' || item.operation === 'insert') {
+          console.warn(`⚠️ Falha ao sincronizar ${item.table}: ${errorMsg}`);
+        }
       }
     }
 
@@ -192,9 +219,8 @@ export async function syncData(fullSync = false) {
         }
       }
 
-      // Sync vendas (current year)
-      const currentYear = new Date().getFullYear();
-      const vendasTable = `vendas_${currentYear}`;
+      // Sync vendas (unified)
+      const vendasTable = 'vendas';
       try {
         const { data: vendas, error } = await supabase
           .from(vendasTable)

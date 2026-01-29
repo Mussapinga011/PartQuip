@@ -57,13 +57,8 @@ export function initRealtime(onDataChange) {
   async function handleRealtimeUpdate(payload) {
     const { eventType, table, new: newRecord, old: oldRecord } = payload;
     
-    // 1. Determine local store name
-    // Vendas tables are partitioned by year (vendas_2025, vendas_2026, etc.)
-    // but locally they are all in the 'vendas' store.
+    // Vendas table is now unified (no more yearly partitions)
     let storeName = table;
-    if (table.startsWith('vendas_')) {
-      storeName = 'vendas';
-    }
 
     // 2. We skip updates that we triggered ourselves (simplified logic)
     // In a production app, we would use a local source ID to ignore our own updates

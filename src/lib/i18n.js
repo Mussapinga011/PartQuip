@@ -208,7 +208,21 @@ const translations = {
     client_ranking: "Ranking de Clientes",
     seasonality: "Sazonalidade",
     forecast: "Previsão de Vendas",
-    export_excel: "Exportar Excel"
+    export_excel: "Exportar Excel",
+    yearly_comparison: "Comparação entre Anos",
+    yearly_comparison_subtitle: "Análise comparativa profissional",
+    report_year_label: "Ano do Relatório:",
+    min_two_years_required: "É necessário ter vendas de pelo menos 2 anos diferentes para comparar.",
+    year_over_year_growth: "Crescimento Ano a Ano",
+    top_5_profitable_parts: "Top 5 Peças Mais Rentáveis por Ano",
+    detailed_comparison: "Comparação Detalhada",
+    metric: "Métrica",
+    total_revenue: "Receita Total",
+    sales_quantity: "Quantidade de Vendas",
+    average_ticket: "Ticket Médio",
+    sales_count: "vendas",
+    ticket_label: "Ticket:",
+    unknown_part: "Desconhecida"
   },
   en: {
     dashboard: "Dashboard",
@@ -418,7 +432,21 @@ const translations = {
     client_ranking: "Client Ranking",
     seasonality: "Seasonality",
     forecast: "Sales Forecast",
-    export_excel: "Export Excel"
+    export_excel: "Export Excel",
+    yearly_comparison: "Yearly Comparison",
+    yearly_comparison_subtitle: "Professional comparative analysis",
+    report_year_label: "Report Year:",
+    min_two_years_required: "At least 2 different years of sales data are required for comparison.",
+    year_over_year_growth: "Year-over-Year Growth",
+    top_5_profitable_parts: "Top 5 Most Profitable Parts by Year",
+    detailed_comparison: "Detailed Comparison",
+    metric: "Metric",
+    total_revenue: "Total Revenue",
+    sales_quantity: "Sales Quantity",
+    average_ticket: "Average Ticket",
+    sales_count: "sales",
+    ticket_label: "Ticket:",
+    unknown_part: "Unknown"
   }
 };
 

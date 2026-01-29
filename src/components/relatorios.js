@@ -7,12 +7,29 @@ import { generatePDF } from '../utils/pdfHelper.js';
 export async function initRelatorios(container) {
   try {
     const pecas = await dbOperations.getAll('pecas');
-    const vendas = await dbOperations.getAll('vendas');
+    const vendasData = await dbOperations.getAll('vendas');
     const categorias = await dbOperations.getAll('categorias');
     
+    // Get unique years from sales
+    const yearsAvailable = [...new Set(vendasData.map(v => new Date(v.created_at).getFullYear()))]
+      .sort((a, b) => b - a);
+    if (yearsAvailable.length === 0) yearsAvailable.push(new Date().getFullYear());
+    
+    let selectedYear = new Date().getFullYear();
+    let lastReportType = null;
+
     container.innerHTML = `
       <div class="space-y-6">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('reports')}</h2>
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('reports')}</h2>
+          
+          <div class="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+            <label for="report-year-select" class="text-sm font-medium text-gray-700 dark:text-gray-300 ml-2">${t('report_year_label')}</label>
+            <select id="report-year-select" class="bg-gray-50 dark:bg-gray-700 border-none text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary block p-2">
+              ${yearsAvailable.map(y => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}</option>`).join('')}
+            </select>
+          </div>
+        </div>
 
         <!-- Report Type Selection -->
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -143,6 +160,13 @@ export async function initRelatorios(container) {
                 <div><p class="font-medium text-gray-900 dark:text-white">${t('seasonality')}</p><p class="text-sm text-gray-500 dark:text-gray-400">Vendas mês a mês (Ano Atual)</p></div>
               </div>
             </button>
+
+            <button class="report-type-btn p-4 border-2 border-primary dark:border-primary rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 hover:shadow-lg transition text-left" data-report="comparacao-anos">
+              <div class="flex items-center gap-3">
+                <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <div><p class="font-medium text-gray-900 dark:text-white">📊 ${t('yearly_comparison')}</p><p class="text-sm text-gray-500 dark:text-gray-400">${t('yearly_comparison_subtitle')}</p></div>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -173,11 +197,20 @@ export async function initRelatorios(container) {
       </div>
     `;
 
+    // Year Selector Handler
+    document.getElementById('report-year-select')?.addEventListener('change', (e) => {
+      selectedYear = parseInt(e.target.value);
+      if (lastReportType) {
+        generateReport(lastReportType, pecas, vendasData, categorias);
+      }
+    });
+
     // Report handlers
     document.querySelectorAll('.report-type-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const reportType = btn.dataset.report;
-        generateReport(reportType, pecas, vendas, categorias);
+        lastReportType = reportType;
+        generateReport(reportType, pecas, vendasData, categorias);
       });
     });
 
@@ -222,57 +255,64 @@ export async function initRelatorios(container) {
       );
     });
 
-    function generateReport(type, pecas, vendas, categorias) {
+    function generateReport(type, pecas, allVendas, categorias) {
       const reportContent = document.getElementById('report-content');
       const reportTitle = document.getElementById('report-title');
       const reportData = document.getElementById('report-data');
 
       reportContent.classList.remove('hidden');
 
+      // Filter sales by selected year
+      const filteredVendas = allVendas.filter(v => new Date(v.created_at).getFullYear() === selectedYear);
+
       switch (type) {
         case 'vendas-periodo':
-          reportTitle.textContent = t('sales_by_period');
-          reportData.innerHTML = renderVendasPeriodo(vendas, pecas);
+          reportTitle.textContent = `${t('sales_by_period')} (${selectedYear})`;
+          reportData.innerHTML = renderVendasPeriodo(filteredVendas, pecas, selectedYear, allVendas);
           break;
         case 'ranking-pecas':
-          reportTitle.textContent = t('parts_ranking');
-          reportData.innerHTML = renderRankingPecas(vendas, pecas);
+          reportTitle.textContent = `${t('parts_ranking')} (${selectedYear})`;
+          reportData.innerHTML = renderRankingPecas(filteredVendas, pecas);
           break;
         case 'stock-baixo':
           reportTitle.textContent = t('low_stock_report');
           reportData.innerHTML = renderStockBaixo(pecas, categorias);
           break;
         case 'vendas-categoria':
-          reportTitle.textContent = t('sales_by_category');
-          reportData.innerHTML = renderVendasCategoria(vendas, pecas, categorias);
+          reportTitle.textContent = `${t('sales_by_category')} (${selectedYear})`;
+          reportData.innerHTML = renderVendasCategoria(filteredVendas, pecas, categorias);
           break;
         case 'margem-lucro':
-          reportTitle.textContent = t('profit_margin');
-          reportData.innerHTML = renderMargemLucro(vendas, pecas);
+          reportTitle.textContent = `${t('profit_margin')} (${selectedYear})`;
+          reportData.innerHTML = renderMargemLucro(filteredVendas, pecas);
           break;
         case 'inventario':
           reportTitle.textContent = t('full_inventory');
           reportData.innerHTML = renderInventario(pecas, categorias);
           break;
         case 'fluxo-caixa':
-          reportTitle.textContent = t('cash_flow');
-          reportData.innerHTML = renderFluxoCaixa(vendas);
+          reportTitle.textContent = `${t('cash_flow')} (${selectedYear})`;
+          reportData.innerHTML = renderFluxoCaixa(filteredVendas);
           break;
         case 'curva-abc':
-          reportTitle.textContent = t('abc_curve');
-          reportData.innerHTML = renderCurvaABC(vendas, pecas);
+          reportTitle.textContent = `${t('abc_curve')} (${selectedYear})`;
+          reportData.innerHTML = renderCurvaABC(filteredVendas, pecas);
           break;
         case 'performance-vendedor':
-          reportTitle.textContent = t('salesman_performance');
-          reportData.innerHTML = renderPerformanceVendedor(vendas);
+          reportTitle.textContent = `${t('salesman_performance')} (${selectedYear})`;
+          reportData.innerHTML = renderPerformanceVendedor(filteredVendas);
           break;
         case 'giro-estoque':
-          reportTitle.textContent = t('stock_turnover');
-          reportData.innerHTML = renderGiroEstoque(vendas, pecas);
+          reportTitle.textContent = `${t('stock_turnover')} (${selectedYear})`;
+          reportData.innerHTML = renderGiroEstoque(filteredVendas, pecas);
           break;
         case 'sazonalidade':
-          reportTitle.textContent = t('seasonality');
-          reportData.innerHTML = renderSazonalidade(vendas);
+          reportTitle.textContent = `${t('seasonality')} (${selectedYear})`;
+          reportData.innerHTML = renderSazonalidade(filteredVendas, selectedYear);
+          break;
+        case 'comparacao-anos':
+          reportTitle.textContent = 'Comparação entre Anos';
+          reportData.innerHTML = renderComparacaoAnos(allVendas, pecas, yearsAvailable);
           break;
       }
     }
@@ -293,31 +333,50 @@ export async function initRelatorios(container) {
       document.body.removeChild(link);
     }
 
-    function renderVendasPeriodo(vendas, pecas) {
+    function renderVendasPeriodo(vendas, pecas, targetYear, allVendas) {
       if (vendas.length === 0) {
         return `<p class="text-gray-400 text-center py-8">${t('no_records')}</p>`;
       }
 
       const hoje = new Date().toISOString().split('T')[0];
-      const mesAtual = hoje.substring(0, 7);
+      const mesAtual = new Date().toISOString().substring(0, 7);
+      
+      const isCurrentYear = targetYear === new Date().getFullYear();
 
       const vendasHoje = vendas.filter(v => v.created_at.startsWith(hoje));
       const vendasMes = vendas.filter(v => v.created_at.startsWith(mesAtual));
 
       const totalHoje = vendasHoje.reduce((sum, v) => sum + v.total, 0);
       const totalMes = vendasMes.reduce((sum, v) => sum + v.total, 0);
+      const totalAno = vendas.reduce((sum, v) => sum + v.total, 0);
+
+      // Comparação com ano anterior
+      const anoAnterior = targetYear - 1;
+      const vendasAnoAnterior = allVendas.filter(v => new Date(v.created_at).getFullYear() === anoAnterior);
+      const totalAnoAnterior = vendasAnoAnterior.reduce((sum, v) => sum + v.total, 0);
+      const crescimento = totalAnoAnterior > 0 ? ((totalAno - totalAnoAnterior) / totalAnoAnterior * 100).toFixed(1) : 0;
+      const crescimentoPositivo = crescimento >= 0;
 
       return `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${t('sales_today')}</p>
-            <p class="text-3xl font-bold text-primary">${formatCurrency(totalHoje)}</p>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${vendasHoje.length} ${t('vendas').toLowerCase()}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${isCurrentYear ? t('sales_today') : 'Vendas Totais do Ano'}</p>
+            <p class="text-3xl font-bold text-primary">${formatCurrency(isCurrentYear ? totalHoje : totalAno)}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${isCurrentYear ? vendasHoje.length : vendas.length} ${t('vendas').toLowerCase()}</p>
           </div>
           <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-6">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${t('sales_by_period')}</p>
-            <p class="text-3xl font-bold text-green-600 dark:text-green-400">${formatCurrency(totalMes)}</p>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${vendasMes.length} ${t('vendas').toLowerCase()}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${isCurrentYear ? t('sales_by_period') : 'Média Mensal'}</p>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400">${formatCurrency(isCurrentYear ? totalMes : totalAno / 12)}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${isCurrentYear ? `${vendasMes.length} este mês` : 'Baseado em 12 meses'}</p>
+          </div>
+          <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Comparação com ${anoAnterior}</p>
+            <p class="text-3xl font-bold ${crescimentoPositivo ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+              ${crescimentoPositivo ? '+' : ''}${crescimento}%
+            </p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              ${anoAnterior}: ${formatCurrency(totalAnoAnterior)}
+            </p>
           </div>
         </div>
         <div class="overflow-x-auto">
@@ -708,12 +767,11 @@ export async function initRelatorios(container) {
       `;
     }
 
-    function renderSazonalidade(vendas) {
+    function renderSazonalidade(vendas, targetYear) {
       const mesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const porMes = Array(12).fill(0);
-      const anoAtual = new Date().getFullYear();
 
-      vendas.filter(v => new Date(v.created_at).getFullYear() === anoAtual).forEach(v => {
+      vendas.forEach(v => {
         const mes = new Date(v.created_at).getMonth();
         porMes[mes] += v.total;
       });
@@ -744,9 +802,159 @@ export async function initRelatorios(container) {
       `;
     }
 
+    function renderComparacaoAnos(allVendas, pecas, yearsAvailable) {
+      if (yearsAvailable.length < 2) {
+        return `<p class="text-gray-400 text-center py-8">${t('min_two_years_required')}</p>`;
+      }
+
+      // Análise por ano
+      const dadosPorAno = {};
+      yearsAvailable.forEach(year => {
+        const vendasAno = allVendas.filter(v => new Date(v.created_at).getFullYear() === year);
+        const totalAno = vendasAno.reduce((sum, v) => sum + v.total, 0);
+        const qtdVendas = vendasAno.length;
+        
+        // Top 5 peças mais rentáveis do ano
+        const receitaPorPeca = {};
+        vendasAno.forEach(v => {
+          receitaPorPeca[v.peca_id] = (receitaPorPeca[v.peca_id] || 0) + v.total;
+        });
+        
+        const topPecas = Object.entries(receitaPorPeca)
+          .map(([id, receita]) => ({
+            peca: pecas.find(p => p.id === id),
+            receita
+          }))
+          .sort((a, b) => b.receita - a.receita)
+          .slice(0, 5);
+
+        dadosPorAno[year] = {
+          total: totalAno,
+          qtdVendas,
+          ticketMedio: qtdVendas > 0 ? totalAno / qtdVendas : 0,
+          topPecas
+        };
+      });
+
+      // Calcular crescimentos
+      const anosOrdenados = yearsAvailable.sort((a, b) => a - b);
+      const comparacoes = [];
+      for (let i = 1; i < anosOrdenados.length; i++) {
+        const anoAtual = anosOrdenados[i];
+        const anoAnterior = anosOrdenados[i - 1];
+        const crescimento = dadosPorAno[anoAnterior].total > 0 
+          ? ((dadosPorAno[anoAtual].total - dadosPorAno[anoAnterior].total) / dadosPorAno[anoAnterior].total * 100).toFixed(1)
+          : 0;
+        comparacoes.push({ anoAtual, anoAnterior, crescimento });
+      }
+
+      return `
+        <!-- Resumo Geral -->
+        <div class="grid grid-cols-1 md:grid-cols-${Math.min(yearsAvailable.length, 4)} gap-4 mb-8">
+          ${yearsAvailable.map(year => {
+            const dados = dadosPorAno[year];
+            return `
+              <div class="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700">
+                <p class="text-2xl font-bold text-gray-900 dark:text-white mb-1">${year}</p>
+                <p class="text-3xl font-bold text-primary mb-2">${formatCurrency(dados.total)}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${dados.qtdVendas} ${t('sales_count')}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">${t('ticket_label')} ${formatCurrency(dados.ticketMedio)}</p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Crescimento Ano a Ano -->
+        <div class="mb-8">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📈 ${t('year_over_year_growth')}</h4>
+          <div class="grid grid-cols-1 md:grid-cols-${Math.min(comparacoes.length, 3)} gap-4">
+            ${comparacoes.map(comp => {
+              const crescimentoPositivo = comp.crescimento >= 0;
+              return `
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">${comp.anoAnterior} → ${comp.anoAtual}</p>
+                  <p class="text-2xl font-bold ${crescimentoPositivo ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">
+                    ${crescimentoPositivo ? '+' : ''}${comp.crescimento}%
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                    ${formatCurrency(dadosPorAno[comp.anoAnterior].total)} → ${formatCurrency(dadosPorAno[comp.anoAtual].total)}
+                  </p>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Top 5 Peças Mais Rentáveis por Ano -->
+        <div class="mb-8">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">🏆 ${t('top_5_profitable_parts')}</h4>
+          <div class="grid grid-cols-1 md:grid-cols-${Math.min(yearsAvailable.length, 3)} gap-6">
+            ${yearsAvailable.map(year => {
+              const dados = dadosPorAno[year];
+              return `
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                  <p class="text-lg font-bold text-gray-900 dark:text-white mb-3">${year}</p>
+                  <div class="space-y-2">
+                    ${dados.topPecas.map((item, idx) => `
+                      <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900/40 rounded">
+                        <div class="flex items-center gap-2">
+                          <span class="flex items-center justify-center w-6 h-6 rounded-full ${idx === 0 ? 'bg-yellow-400 text-white' : idx === 1 ? 'bg-gray-300 text-gray-700' : idx === 2 ? 'bg-orange-400 text-white' : 'bg-gray-200 text-gray-600'} text-xs font-bold">
+                            ${idx + 1}
+                          </span>
+                          <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">${item.peca?.codigo || '-'}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${item.peca?.nome || t('unknown_part')}</p>
+                          </div>
+                        </div>
+                        <p class="text-sm font-bold text-primary">${formatCurrency(item.receita)}</p>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Tabela Comparativa Detalhada -->
+        <div class="overflow-x-auto">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📊 ${t('detailed_comparison')}</h4>
+          <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-900/50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300">${t('metric')}</th>
+                ${yearsAvailable.map(year => `
+                  <th class="px-4 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300">${year}</th>
+                `).join('')}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+              <tr>
+                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${t('total_revenue')}</td>
+                ${yearsAvailable.map(year => `
+                  <td class="px-4 py-2 text-sm text-right font-bold text-primary">${formatCurrency(dadosPorAno[year].total)}</td>
+                `).join('')}
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${t('sales_quantity')}</td>
+                ${yearsAvailable.map(year => `
+                  <td class="px-4 py-2 text-sm text-right text-gray-600 dark:text-gray-400">${dadosPorAno[year].qtdVendas}</td>
+                `).join('')}
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${t('average_ticket')}</td>
+                ${yearsAvailable.map(year => `
+                  <td class="px-4 py-2 text-sm text-right text-gray-600 dark:text-gray-400">${formatCurrency(dadosPorAno[year].ticketMedio)}</td>
+                `).join('')}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
   } catch (error) {
     console.error('Relatórios error:', error);
     container.innerHTML = '<p class="text-red-500">Erro ao carregar relatórios</p>';
   }
 }
-

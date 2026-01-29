@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório Técnico PartQuip SaaS</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
+        h1 { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 30px; }
+        h3 { color: #1f2937; }
+        code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; font-family: Consolas, monospace; }
+        pre { background: #f3f4f6; padding: 15px; border-radius: 8px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #d1d5db; padding: 12px; text-align: left; }
+        th { background-color: #f9fafb; }
+        blockquote { border-left: 4px solid #2563eb; margin: 0; padding-left: 15px; color: #4b5563; }
+        .meta { color: #6b7280; font-size: 0.9em; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <h1>🏗️ Relatório de Viabilidade e Arquitetura: Migração para SaaS (Multi-empresa)</h1>
+    
+    <div class="meta">
+        <p><strong>Data:</strong> 23 de Janeiro de 2026<br>
+        <strong>Projeto:</strong> PartQuip<br>
+        <strong>Autor:</strong> Antigravity AI</p>
+    </div>
+
+    <h2>1. Visão Geral</h2>
+    <p>Este documento detalha as mudanças necessárias para transformar o sistema <strong>PartQuip</strong> (atualmente Single-Tenant) em uma plataforma <strong>SaaS Multi-Tenant</strong> (Software as a Service), permitindo que múltiplas oficinas/empresas utilizem a mesma infraestrutura de forma isolada e segura.</p>
+
+    <h2>2. Padrão de Arquitetura Proposto</h2>
+    <p>Recomendamos a estratégia de <strong>Isolamento Lógico (Row-Level Security)</strong>, que é a mais eficiente e escalável para aplicações modernas com Supabase/PostgreSQL.</p>
+
+    <h3>Como funciona:</h3>
+    <ul>
+        <li>Todas as empresas compartilham o mesmo banco de dados e as mesmas tabelas.</li>
+        <li>Cada registro no banco possui uma coluna <code>organization_id</code> (ID da empresa).</li>
+        <li>Políticas de Segurança (RLS) garantem que uma empresa <strong>nunca</strong> veja os dados de outra.</li>
+    </ul>
+
+    <h2>3. Alterações Necessárias</h2>
+
+    <h3>A. Banco de Dados (Supabase)</h3>
+    <ol>
+        <li><strong>Nova Tabela <code>organizations</code></strong>:
+            <ul>
+                <li><code>id</code> (UUID, PK)</li>
+                <li><code>name</code> (Nome da empresa)</li>
+                <li><code>slug</code> (URL amigável)</li>
+                <li><code>plan</code> (free, pro, enterprise)</li>
+                <li><code>owner_id</code> (referência ao usuário dono)</li>
+            </ul>
+        </li>
+        <li><strong>Nova Tabela <code>organization_members</code></strong>:
+            <ul>
+                <li><code>organization_id</code> (FK)</li>
+                <li><code>user_id</code> (FK para <code>auth.users</code>)</li>
+                <li><code>role</code> (admin, vendedor, estoquista)</li>
+            </ul>
+        </li>
+        <li><strong>Alteração em TODAS as Tabelas Existentes</strong>:
+            <ul>
+                <li>Adicionar coluna <code>organization_id</code> (UUID, Not Null, FK)</li>
+            </ul>
+        </li>
+        <li><strong>Atualização de RLS (Row Level Security)</strong>:</li>
+    </ol>
+    <pre><code>CREATE POLICY "Acesso por Organização" ON pecas
+USING (organization_id IN (
+    SELECT organization_id FROM organization_members 
+    WHERE user_id = auth.uid()
+));</code></pre>
+
+    <h3>B. Frontend (Aplicação)</h3>
+    <ol>
+        <li><strong>Contexto de Organização</strong>: Criar React Context global.</li>
+        <li><strong>Fluxo de Onboarding</strong>: Criar empresa ao cadastrar.</li>
+        <li><strong>Refatoração de CRUD</strong>: Todos os inserts devem incluir <code>organization_id</code>.</li>
+        <li><strong>Gestão de Membros</strong>: Tela de convites e permissões.</li>
+    </ol>
+
+    <h2>4. Impacto e Riscos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Área</th>
+                <th>Impacto</th>
+                <th>Risco</th>
+                <th>Mitigação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Banco de Dados</td>
+                <td>Alto</td>
+                <td>Alto</td>
+                <td>Testes rigorosos de RLS.</td>
+            </tr>
+            <tr>
+                <td>Código Frontend</td>
+                <td>Médio</td>
+                <td>Médio</td>
+                <td>Refatoração gradual.</td>
+            </tr>
+            <tr>
+                <td>Migração</td>
+                <td>Alto</td>
+                <td>Médio</td>
+                <td>Backup e script de migração cuidadoso.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>5. Estimativa de Esforço</h2>
+    <ul>
+        <li><strong>Total Estimado:</strong> ~2 semanas de desenvolvimento focado.</li>
+    </ul>
+
+    <h2>6. Conclusão</h2>
+    <p>A migração é viável mas recomendada para a versão 2.0.0, em um branch dedicado.</p>
+</body>
+</html>

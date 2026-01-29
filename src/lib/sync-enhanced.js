@@ -188,11 +188,11 @@ export async function syncData() {
         let tableName = item.table;
         let data = { ...item.data };
 
-        // Handle annual vendas tables mapping
-        if (tableName === 'vendas') {
-          const year = new Date(data.created_at).getFullYear() || new Date().getFullYear();
-          tableName = `vendas_${year}`;
-        }
+        // Handle annual vendas tables mapping - REMOVED (Unified DB)
+        // if (tableName === 'vendas') {
+        //   const year = new Date(data.created_at).getFullYear() || new Date().getFullYear();
+        //   tableName = `vendas_${year}`;
+        // }
 
         // Handle legacy column name mapping for abastecimentos if present in queue
         if (tableName === 'abastecimentos' && data.custo_unitario !== undefined) {
@@ -247,10 +247,9 @@ export async function syncData() {
       }
     }
 
-    // 3. Sync vendas (current year) with delta sync
-    const currentYear = new Date().getFullYear();
-    const vendasTable = `vendas_${currentYear}`;
-    const lastVendasSync = lastSyncTimestamps.vendas;
+    // 3. Sync vendas (unified) with delta sync
+    const vendasTable = 'vendas';
+    constlastVendasSync = lastSyncTimestamps.vendas;
     
     try {
       let query = supabase
