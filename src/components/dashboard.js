@@ -4,6 +4,7 @@ import { dbOperations } from '../lib/db.js';
 import { formatCurrency, formatDate } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
 import { startOfDay, startOfWeek, startOfMonth, subDays, format, isWithinInterval, endOfDay } from 'date-fns';
+import { generatePDF } from '../utils/pdfHelper.js';
 
 let chartInstance = null;
 let currentPeriod = 'month'; // 'day', 'week', 'month'
@@ -76,7 +77,11 @@ function renderTemplate(container) {
   });
 
   document.getElementById('btn-export-pdf').addEventListener('click', () => {
-    window.print();
+    // We pass the whole dashboard content for printing
+    const content = document.getElementById('dashboard-content');
+    if (content) {
+      generatePDF(content, 'dashboard', t('dashboard'));
+    }
   });
 }
 

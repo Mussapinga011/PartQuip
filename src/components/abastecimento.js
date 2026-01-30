@@ -2,6 +2,7 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, showToast, formatCurrency, formatDate } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
+import { generatePDF } from '../utils/pdfHelper.js';
 
 export async function initAbastecimento(container) {
   try {
@@ -16,11 +17,39 @@ export async function initAbastecimento(container) {
       <div class="space-y-6">
         <div class="flex items-center justify-between">
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('supply_management')}</h2>
-          <button id="btn-novo-abastecimento" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            ${t('new_entry')}
+          <div class="flex gap-2">
+            <button id="btn-export-abastecimento" class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              PDF
+            </button>
+            <button id="btn-novo-abastecimento" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              ${t('new_entry')}
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-wrap gap-4 items-end">
+          <div class="flex-1 min-w-[200px]">
+             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">${t('supplier')}</label>
+             <select id="filter-fornecedor" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white">
+               <option value="">${t('all') || 'Todos'}</option>
+               ${fornecedores.map(f => `<option value="${f.id}">${f.nome}</option>`).join('')}
+             </select>
+          </div>
+          <div class="w-40">
+             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">${t('start_date')}</label>
+             <input type="date" id="filter-date-start" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white">
+          </div>
+          <div class="w-40">
+             <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">${t('end_date')}</label>
+             <input type="date" id="filter-date-end" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-gray-50 dark:bg-gray-700 dark:text-white">
+          </div>
+          <button id="btn-filter-clear" class="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline">
+            ${t('clear') || 'Limpar'}
           </button>
         </div>
 
@@ -96,7 +125,7 @@ export async function initAbastecimento(container) {
       </div>
     `;
 
-    setupAbastecimentoHandlers(container, pecas);
+    setupAbastecimentoHandlers(container, pecas, abastecimentos, fornecedores);
 
   } catch (error) {
     console.error('Abastecimento error:', error);
@@ -126,7 +155,7 @@ function renderAbastecimentosRows(abastecimentos, pecas, fornecedores) {
   }).join('');
 }
 
-function setupAbastecimentoHandlers(container, pecas) {
+function setupAbastecimentoHandlers(container, pecas, abastecimentos, fornecedores) {
   const modal = document.getElementById('modal-abastecimento');
   const form = document.getElementById('form-abastecimento');
   const searchInput = document.getElementById('busca-peca-abastecimento');
@@ -143,6 +172,53 @@ function setupAbastecimentoHandlers(container, pecas) {
     form.reset();
     pecaSelecionadaDiv.classList.add('hidden');
     pecaIdInput.value = '';
+  });
+
+  // Filter Logic
+  const filterSupplier = document.getElementById('filter-fornecedor');
+  const filterStart = document.getElementById('filter-date-start');
+  const filterEnd = document.getElementById('filter-date-end');
+  const tbody = container.querySelector('tbody');
+
+  function applyFilters() {
+    const supplierId = filterSupplier.value;
+    const startDate = filterStart.value ? new Date(filterStart.value) : null;
+    const endDate = filterEnd.value ? new Date(filterEnd.value) : null;
+
+    if (endDate) endDate.setHours(23, 59, 59); // End of day
+
+    const filtered = abastecimentos.filter(a => {
+      const date = new Date(a.created_at);
+      const matchSupplier = !supplierId || a.fornecedor_id === supplierId;
+      const matchStart = !startDate || date >= startDate;
+      const matchEnd = !endDate || date <= endDate;
+      return matchSupplier && matchStart && matchEnd;
+    });
+
+    tbody.innerHTML = renderAbastecimentosRows(filtered, pecas, fornecedores);
+  }
+
+  [filterSupplier, filterStart, filterEnd].forEach(el => el.addEventListener('change', applyFilters));
+
+  document.getElementById('btn-filter-clear').addEventListener('click', () => {
+    filterSupplier.value = '';
+    filterStart.value = '';
+    filterEnd.value = '';
+    applyFilters();
+  });
+
+  // Export PDF
+  document.getElementById('btn-export-abastecimento').addEventListener('click', () => {
+    // Clone table for clean export
+    const tableClone = container.querySelector('table').cloneNode(true);
+    // Remove complex actions if any (none here, but good practice)
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.padding = '20px';
+    wrapper.innerHTML = `<h2 class="text-xl font-bold mb-4">Relatório de Abastecimentos</h2>`;
+    wrapper.appendChild(tableClone);
+    
+    generatePDF(wrapper, 'abastecimentos', 'Relatório de Abastecimentos');
   });
 
   // Search logic (similar to Vendas)

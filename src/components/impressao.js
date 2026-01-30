@@ -23,9 +23,28 @@ export async function initImpressao(container, vendaId = null) {
       <div class="space-y-6">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('receipt_printing') || 'Impressão de Recibos'}</h2>
         
+        <!-- Filters -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${t('search')}</label>
+               <input type="text" id="print-search" placeholder="${t('search_placeholder') || 'Buscar venda, cliente...'}" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${t('start_date') || 'Data Inicio'}</label>
+               <input type="date" id="print-date-start" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">${t('end_date') || 'Data Fim'}</label>
+               <input type="date" id="print-date-end" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">
+            </div>
+          </div>
+        </div>
+
         <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-           <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+           <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">${t('select_sale_print') || 'Selecione uma Venda para Imprimir'}</h3>
+            <span id="result-count" class="text-sm text-gray-500 dark:text-gray-400">Showing 20 results</span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full">
@@ -38,18 +57,8 @@ export async function initImpressao(container, vendaId = null) {
                   <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">${t('actions')}</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                ${vendas.slice(0, 20).map(v => `
-                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${v.cliente_nome || v.cliente_veiculo || t('not_informed') || 'Não informado'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right">
-                      <button class="btn-print text-primary hover:text-primary-dark font-medium transition" data-id="${v.id}">${t('print') || 'Imprimir'}</button>
-                    </td>
-                  </tr>
-                `).join('')}
+              <tbody id="print-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <!-- Dynamic Content -->
               </tbody>
             </table>
           </div>
@@ -57,11 +66,69 @@ export async function initImpressao(container, vendaId = null) {
       </div>
     `;
 
-    document.querySelectorAll('.btn-print').forEach(btn => {
-      btn.addEventListener('click', () => {
-        showPrintPreview(container, btn.dataset.id);
+    function renderTable(data) {
+      const tbody = document.getElementById('print-tbody');
+      const countEl = document.getElementById('result-count');
+      
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">${t('no_records') || 'Nenhum registro encontrado'}</td></tr>`;
+        countEl.textContent = '0 results';
+        return;
+      }
+
+      countEl.textContent = `Showing ${Math.min(data.length, 50)} of ${data.length} results`;
+
+      tbody.innerHTML = data.slice(0, 50).map(v => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">${v.cliente_nome || v.cliente_veiculo || t('not_informed') || 'Não informado'}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-right">
+            <button class="btn-print text-primary hover:text-primary-dark font-medium transition" data-id="${v.id}">${t('print') || 'Imprimir'}</button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Re-attach listeners
+      document.querySelectorAll('.btn-print').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showPrintPreview(container, btn.dataset.id);
+        });
       });
-    });
+    }
+
+    // Initial Render
+    renderTable(vendas);
+
+    // Filter Logic
+    function applyFilters() {
+      const termo = document.getElementById('print-search').value.toLowerCase().trim();
+      const dataInicio = document.getElementById('print-date-start').value;
+      const dataFim = document.getElementById('print-date-end').value;
+
+      const filtered = vendas.filter(v => {
+         // Search Term
+         const searchMatch = !termo || 
+           (v.numero_venda && v.numero_venda.toLowerCase().includes(termo)) ||
+           (v.cliente_nome && v.cliente_nome.toLowerCase().includes(termo)) ||
+           (v.cliente_veiculo && v.cliente_veiculo.toLowerCase().includes(termo));
+
+         if (!searchMatch) return false;
+
+         // Date Range
+         if (dataInicio && new Date(v.created_at) < new Date(dataInicio).setHours(0,0,0,0)) return false;
+         if (dataFim && new Date(v.created_at) > new Date(dataFim).setHours(23,59,59,999)) return false;
+
+         return true;
+      });
+
+      renderTable(filtered);
+    }
+
+    document.getElementById('print-search').addEventListener('input', applyFilters);
+    document.getElementById('print-date-start').addEventListener('change', applyFilters);
+    document.getElementById('print-date-end').addEventListener('change', applyFilters);
 
   } catch (error) {
     console.error('Impressao error:', error);

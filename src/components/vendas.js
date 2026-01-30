@@ -1,6 +1,7 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { supabaseHelpers } from '../lib/supabase.js';
 import { generateId, formatCurrency, formatDate, showToast, confirm } from '../utils/helpers.js';
+import { renderEmptyState } from '../utils/ui-helpers.js';
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
 import { notifyVendaCreated, notifyEstoqueBaixo } from '../lib/notifications.js';
@@ -441,7 +442,7 @@ export async function initVendas(container) {
       const tbody = document.getElementById('itens-venda');
       
       if (itensVenda.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_items_added') || 'Nenhum item adicionado'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6">${renderEmptyState('no_items_added', 'add_items_instruction')}</td></tr>`;
         return;
       }
 
@@ -731,10 +732,7 @@ export async function initVendas(container) {
       filteredVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
       if (filteredVendas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-            <p class="text-lg font-medium">Nenhum registro encontrado</p>
-            <p class="text-sm">Tente ajustar os filtros de busca.</p>
-        </td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">${renderEmptyState('no_records', 'adjust_filters_hint')}</td></tr>`;
         return;
       }
 

@@ -4,7 +4,8 @@ import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
 import { notifyPecaCreated, notifyPecaUpdated, notifyPecaDeleted } from '../lib/notifications.js';
 import { supabaseHelpers } from '../lib/supabase.js';
-
+import { renderEmptyState } from '../utils/ui-helpers.js';
+import { generatePDF } from '../utils/pdfHelper.js';
 export async function initPecas(container) {
   try {
     const pecas = await dbOperations.getAll('pecas');
@@ -14,14 +15,21 @@ export async function initPecas(container) {
     
     container.innerHTML = `
       <div class="space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('parts_management')}</h2>
-          <button id="btn-nova-peca" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            ${t('new_part')}
-          </button>
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('parts_title')}</h2>
+            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">${pecas.length} itens</span>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-export-pecas" class="bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-sm">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              PDF
+            </button>
+            <button id="btn-nova-peca" class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 shadow-sm shadow-blue-500/30">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+              ${t('new_part')}
+            </button>
+          </div>
         </div>
 
         <!-- Search and Filters -->
@@ -30,7 +38,7 @@ export async function initPecas(container) {
             <div class="lg:col-span-2 relative">
               <input 
                 type="text" 
-                id="search-pecas" 
+                id="busca-peca" 
                 placeholder="${t('search_placeholder')}" 
                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
               >
@@ -184,8 +192,19 @@ export async function initPecas(container) {
       setupEditDeleteHandlers(container, filtered, categorias, tipos, fornecedores);
     }
 
-    // Input Events
-    const searchInput = document.getElementById('search-pecas');
+    document.getElementById('btn-export-pecas').addEventListener('click', () => {
+      const table = container.querySelector('table');
+      if (table) {
+          const wrapper = document.createElement('div');
+          wrapper.style.padding = '20px';
+          wrapper.innerHTML = `<h2 class="text-xl font-bold mb-4">Lista de Peças</h2>`;
+          wrapper.appendChild(table.cloneNode(true));
+          generatePDF(wrapper, 'pecas', 'Lista de Peças');
+      }
+  });
+
+  // Setup search
+    const searchInput = document.getElementById('busca-peca');
     searchInput.addEventListener('input', (e) => {
       filterState.term = e.target.value;
       applyFilters();
@@ -422,7 +441,7 @@ function setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedor
 
 function renderPecasRows(pecas, categorias) {
   if (pecas.length === 0) {
-    return `<tr><td colspan="7" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">${t('no_records')}</td></tr>`;
+    return `<tr><td colspan="7">${renderEmptyState('no_records')}</td></tr>`;
   }
 
   return pecas.map(peca => {

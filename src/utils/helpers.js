@@ -1,11 +1,11 @@
+
+import { formatMoney } from '../lib/currency.js';
+
 // Helper Functions
 
 // Format currency (MT)
 export function formatCurrency(value) {
-  return new Intl.NumberFormat('pt-MZ', {
-    style: 'currency',
-    currency: 'MZN'
-  }).format(value);
+  return formatMoney(value);
 }
 
 // Format date

@@ -127,6 +127,35 @@ export const dbOperations = {
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
     });
+  },
+
+  async backupDB() {
+    const stores = ['categorias', 'tipos', 'pecas', 'compatibilidade_veiculos', 'fornecedores', 'abastecimentos', 'vendas'];
+    const backup = {
+      timestamp: new Date().toISOString(),
+      version: 1,
+      data: {}
+    };
+
+    for (const store of stores) {
+      backup.data[store] = await this.getAll(store);
+    }
+    return backup;
+  },
+
+  async restoreDB(backupData) {
+    if (!backupData || !backupData.data) throw new Error('Invalid backup file');
+    
+    // Clear existing data? Or merge? Safe choice: Clear then Import
+    // But since this is dangerous, maybe we should just upsert.
+    // Let's go with UPSERT for safety against IDs collision.
+    
+    for (const [storeName, records] of Object.entries(backupData.data)) {
+      for (const record of records) {
+        await this.put(storeName, record);
+      }
+    }
+    return true;
   }
 };
 
