@@ -149,10 +149,11 @@ export async function syncData(fullSync = false) {
         }
 
         switch (item.operation) {
-          case 'insert':
+          case 'insert': {
             await supabaseHelpers.insert(tableName, data);
             break;
-          case 'update':
+          }
+          case 'update': {
             // Conflict Resolution: Check if server has newer data
             // Get current server version
             const { data: serverRecord, error: fetchError } = await supabase
@@ -177,9 +178,11 @@ export async function syncData(fullSync = false) {
 
             await supabaseHelpers.update(tableName, data.id, data);
             break;
-          case 'delete':
+          }
+          case 'delete': {
             await supabaseHelpers.delete(tableName, data.id);
             break;
+          }
         }
         await syncQueue.markSynced(item.id);
       } catch (error) {
@@ -189,6 +192,25 @@ export async function syncData(fullSync = false) {
         // Mostrar erro ao usuário se for uma operação importante
         if (item.operation === 'update' || item.operation === 'insert') {
           console.warn(`⚠️ Falha ao sincronizar ${item.table}: ${errorMsg}`);
+        }
+        
+        // Verificação profunda: Proteção contra fila trancada (Deadlock)
+        // Certos erros são "Fatais", ou seja, tentar de novo não vai resolver (ex: valor muito longo, ID duplicado).
+        const msg = String(errorMsg).toLowerCase();
+        const isFatalError = error?.code === '23505' || // Unique violation
+                             error?.code === '22001' || // Value too long
+                             msg.includes('too long') ||
+                             msg.includes('not found');
+        
+        item.retry_count = (item.retry_count || 0) + 1;
+        
+        if (isFatalError || item.retry_count >= 3) {
+          console.error(`🚨 Item travado na fila! Descartando sync ID ${item.id} (Tabela: ${item.table}) devido a mais de 3 falhas ou ERRO FATAL.`);
+          // Marca deliberadamente como "synced" para que seja limpo da fila e permita as próximas atualizações passarem
+          await syncQueue.markSynced(item.id);
+        } else {
+          // Apenas atualiza o contador na fila local
+          await dbOperations.put('sync_queue', item);
         }
       }
     }

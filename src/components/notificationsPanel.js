@@ -11,6 +11,7 @@ import {
   updateNotificationBadge
 } from '../lib/notifications.js';
 import { t } from '../lib/i18n.js';
+import { confirm } from '../utils/helpers.js';
 
 let isOpen = false;
 
@@ -221,8 +222,8 @@ function handleMarkAllRead() {
   renderNotifications();
 }
 
-function handleClearAll() {
-  if (confirm(t('confirm_clear_all') || 'Tem certeza que deseja limpar todas as notificações?')) {
+async function handleClearAll() {
+  if (await confirm(t('confirm_clear_all') || 'Tem certeza que deseja limpar todas as notificações?')) {
     clearAllNotifications();
     renderNotifications();
   }
