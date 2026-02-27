@@ -334,7 +334,9 @@ export async function initRelatorios(container) {
     }
 
     function renderVendasPeriodo(vendas, pecas, targetYear, allVendas) {
-      if (vendas.length === 0) {
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
+      
+      if (vendasValidas.length === 0) {
         return `<p class="text-gray-400 text-center py-8">${t('no_records')}</p>`;
       }
 
@@ -343,16 +345,16 @@ export async function initRelatorios(container) {
       
       const isCurrentYear = targetYear === new Date().getFullYear();
 
-      const vendasHoje = vendas.filter(v => v.created_at.startsWith(hoje));
-      const vendasMes = vendas.filter(v => v.created_at.startsWith(mesAtual));
+      const vendasHoje = vendasValidas.filter(v => v.created_at.startsWith(hoje));
+      const vendasMes = vendasValidas.filter(v => v.created_at.startsWith(mesAtual));
 
       const totalHoje = vendasHoje.reduce((sum, v) => sum + v.total, 0);
       const totalMes = vendasMes.reduce((sum, v) => sum + v.total, 0);
-      const totalAno = vendas.reduce((sum, v) => sum + v.total, 0);
+      const totalAno = vendasValidas.reduce((sum, v) => sum + v.total, 0);
 
       // Comparação com ano anterior
       const anoAnterior = targetYear - 1;
-      const vendasAnoAnterior = allVendas.filter(v => new Date(v.created_at).getFullYear() === anoAnterior);
+      const vendasAnoAnterior = allVendas.filter(v => v.status !== 'cancelada' && new Date(v.created_at).getFullYear() === anoAnterior);
       const totalAnoAnterior = vendasAnoAnterior.reduce((sum, v) => sum + v.total, 0);
       const crescimento = totalAnoAnterior > 0 ? ((totalAno - totalAnoAnterior) / totalAnoAnterior * 100).toFixed(1) : 0;
       const crescimentoPositivo = crescimento >= 0;
@@ -391,14 +393,14 @@ export async function initRelatorios(container) {
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              ${vendas.slice(0, 50).map(v => {
-                const peca = pecas.find(p => p.id === v.peca_id);
+              ${vendasValidas.slice(0, 50).map(v => {
+                const peca = pecas.find(p => String(p.id) === String(v.peca_id));
                 return `
                   <tr>
                     <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${formatDate(v.created_at, 'dd/MM/yyyy HH:mm')}</td>
                     <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${v.numero_venda || '-'}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${peca?.nome || 'Desconhecida'}</td>
-                    <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${v.quantity || v.quantidade}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${peca?.nome || v.peca_nome || 'Produto Excluído'}</td>
+                    <td class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">${v.quantity || v.quantidade || 0}</td>
                     <td class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">${formatCurrency(v.total)}</td>
                   </tr>
                 `;
@@ -411,17 +413,28 @@ export async function initRelatorios(container) {
 
     function renderRankingPecas(vendas, pecas) {
       const counts = {};
-      vendas.forEach(v => {
-        counts[v.peca_id] = (counts[v.peca_id] || 0) + (v.quantity || v.quantidade);
+      
+      // Filter out cancelled sales
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
+      
+      vendasValidas.forEach(v => {
+        if (!v.peca_id) return; // Ignore missing piece associations
+        counts[v.peca_id] = (counts[v.peca_id] || 0) + parseInt(v.quantity || v.quantidade || 0);
       });
 
       const ranking = Object.entries(counts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 20)
-        .map(([id, qty]) => {
-          const peca = pecas.find(p => p.id === id);
-          return { peca, quantidade: qty };
-        });
+        .sort((a, b) => b[1] - a[1]) // Sort by quantity descending
+        .reduce((acc, [id, qty]) => {
+           // Skip if we couldn't find the piece on the dictionary
+           const peca = pecas.find(p => String(p.id) === String(id));
+           if (peca) {
+             acc.push({ peca, quantidade: qty });
+           } else {
+             acc.push({ peca: { nome: 'Peça Excluída / Desconhecida', codigo: 'N/A' }, quantidade: qty });
+           }
+           return acc;
+        }, [])
+        .slice(0, 20); // Top 20
 
       if (ranking.length === 0) {
         return `<p class="text-gray-400 text-center py-8">${t('no_records')}</p>`;
@@ -497,14 +510,15 @@ export async function initRelatorios(container) {
 
     function renderVendasCategoria(vendas, pecas, categorias) {
       const porCategoria = {};
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
       
-      vendas.forEach(v => {
-        const peca = pecas.find(p => p.id === v.peca_id);
+      vendasValidas.forEach(v => {
+        const peca = pecas.find(p => String(p.id) === String(v.peca_id));
         const catId = peca?.categoria_id || 'sem-categoria';
         if (!porCategoria[catId]) {
           porCategoria[catId] = { quantidade: 0, total: 0 };
         }
-        porCategoria[catId].quantidade += (v.quantity || v.quantidade);
+        porCategoria[catId].quantidade += parseInt(v.quantity || v.quantidade || 0);
         porCategoria[catId].total += v.total;
       });
 
@@ -540,11 +554,16 @@ export async function initRelatorios(container) {
     function renderMargemLucro(vendas, pecas) {
       let totalCusto = 0;
       let totalVenda = 0;
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
 
-      vendas.forEach(v => {
-        const peca = pecas.find(p => p.id === v.peca_id);
-        if (peca) {
-          totalCusto += peca.preco_custo * (v.quantity || v.quantidade);
+      vendasValidas.forEach(v => {
+        const peca = pecas.find(p => String(p.id) === String(v.peca_id));
+        if (peca && peca.preco_custo) {
+          totalCusto += peca.preco_custo * parseInt(v.quantity || v.quantidade || 0);
+          totalVenda += v.total;
+        } else if (v.total) {
+          // If piece is missing, we at least count the revenue but cost is unknown.
+          // In a robust system, we might log this or use a default ratio.
           totalVenda += v.total;
         }
       });
@@ -736,8 +755,11 @@ export async function initRelatorios(container) {
     }
     function renderGiroEstoque(vendas, pecas) {
       const vendidos = {};
-      vendas.forEach(v => {
-        vendidos[v.peca_id] = (vendidos[v.peca_id] || 0) + (v.quantity || v.quantidade);
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
+
+      vendasValidas.forEach(v => {
+        if (!v.peca_id) return;
+        vendidos[v.peca_id] = (vendidos[v.peca_id] || 0) + parseInt(v.quantity || v.quantidade || 0);
       });
 
       const items = pecas.map(p => {
@@ -770,8 +792,9 @@ export async function initRelatorios(container) {
     function renderSazonalidade(vendas, targetYear) {
       const mesNomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const porMes = Array(12).fill(0);
+      const vendasValidas = vendas.filter(v => v.status !== 'cancelada');
 
-      vendas.forEach(v => {
+      vendasValidas.forEach(v => {
         const mes = new Date(v.created_at).getMonth();
         porMes[mes] += v.total;
       });
@@ -810,13 +833,14 @@ export async function initRelatorios(container) {
       // Análise por ano
       const dadosPorAno = {};
       yearsAvailable.forEach(year => {
-        const vendasAno = allVendas.filter(v => new Date(v.created_at).getFullYear() === year);
+        const vendasAno = allVendas.filter(v => v.status !== 'cancelada' && new Date(v.created_at).getFullYear() === year);
         const totalAno = vendasAno.reduce((sum, v) => sum + v.total, 0);
         const qtdVendas = vendasAno.length;
         
         // Top 5 peças mais rentáveis do ano
         const receitaPorPeca = {};
         vendasAno.forEach(v => {
+          if (!v.peca_id) return;
           receitaPorPeca[v.peca_id] = (receitaPorPeca[v.peca_id] || 0) + v.total;
         });
         

@@ -224,19 +224,19 @@ function calculateAdvancedKPIs(pecas, vendas, period) {
   // Profit Calculation
   let lucroBruto = 0;
   filteredSales.forEach(v => {
-    const peca = pecas.find(p => p.id === v.peca_id);
+    const peca = pecas.find(p => String(p.id) === String(v.peca_id));
     if (peca) {
       const custo = peca.preco_custo || 0;
-      lucroBruto += (v.preco_unitario - custo) * v.quantidade;
+      lucroBruto += (v.preco_unitario - custo) * (v.quantity || v.quantidade || 0);
     }
   });
 
   let prevLucro = 0;
   prevSales.forEach(v => {
-    const peca = pecas.find(p => p.id === v.peca_id);
+    const peca = pecas.find(p => String(p.id) === String(v.peca_id));
     if (peca) {
       const custo = peca.preco_custo || 0;
-      prevLucro += (v.preco_unitario - custo) * v.quantidade;
+      prevLucro += (v.preco_unitario - custo) * (v.quantity || v.quantidade || 0);
     }
   });
   const lucroTrend = prevLucro > 0 ? ((lucroBruto - prevLucro) / prevLucro) * 100 : null;
@@ -258,7 +258,10 @@ function calculateAdvancedKPIs(pecas, vendas, period) {
     isWithinInterval(new Date(v.created_at), { start: startOfMonth(now), end: endAt })
   );
   const monthlyCounts = {};
-  monthlySales.forEach(v => monthlyCounts[v.peca_id] = (monthlyCounts[v.peca_id] || 0) + v.quantidade);
+  monthlySales.forEach(v => {
+     if (!v.peca_id) return;
+     monthlyCounts[v.peca_id] = (monthlyCounts[v.peca_id] || 0) + (v.quantity || v.quantidade || 0);
+  });
   
   const slowProdutos = pecas
     .map(p => ({
@@ -266,7 +269,7 @@ function calculateAdvancedKPIs(pecas, vendas, period) {
       quantidade: monthlyCounts[p.id] || 0
     }))
     .sort((a, b) => a.quantidade - b.quantidade)
-    .slice(0, 10);
+    .slice(0, 5); // Just top 5 slow ones to keep UI clean
 
   // Ranking Vendedores
   const rankingVendedores = processSalesmanRanking(filteredSales);
@@ -294,12 +297,13 @@ function calculateAdvancedKPIs(pecas, vendas, period) {
 function processProductStats(vendas, pecas) {
   const counts = {};
   vendas.forEach(v => {
-    counts[v.peca_id] = (counts[v.peca_id] || 0) + v.quantidade;
+    if (!v.peca_id) return;
+    counts[v.peca_id] = (counts[v.peca_id] || 0) + (v.quantity || v.quantidade || 0);
   });
   
   return Object.entries(counts)
     .map(([id, qty]) => {
-      const peca = pecas.find(p => p.id === id);
+      const peca = pecas.find(p => String(p.id) === String(id));
       return { nome: peca?.nome || 'Desconhecida', quantidade: qty };
     })
     .sort((a, b) => b.quantidade - a.quantidade);
@@ -338,9 +342,9 @@ function processChartData(vendas, pecas) {
     if (chartPoint) {
       chartPoint.sales += v.total;
       
-      const peca = pecas.find(p => p.id === v.peca_id);
+      const peca = pecas.find(p => String(p.id) === String(v.peca_id));
       if (peca) {
-        chartPoint.profit += (v.preco_unitario - (peca.preco_custo || 0)) * v.quantidade;
+        chartPoint.profit += (v.preco_unitario - (peca.preco_custo || 0)) * (v.quantity || v.quantidade || 0);
       }
     }
   });
