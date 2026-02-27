@@ -15,13 +15,14 @@ export async function initVendas(container) {
       <div class="space-y-6">
         <div class="flex items-center justify-between">
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white">${t('vendas')}</h2>
-          <div class="flex gap-2">
-            <button id="btn-nova-venda" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition hidden" title="${t('new_sale')}">
+          <div class="flex gap-3">
+            <button id="btn-nova-venda" class="px-5 py-2.5 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-dark transition shadow-md hover:shadow-lg flex items-center justify-center gap-2 hidden" title="${t('new_sale')}">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
               ${t('new_sale')}
             </button>
-            <button id="btn-ver-historico" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <button id="btn-ver-historico" class="px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm hover:shadow-md flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
               ${t('history')}
             </button>
@@ -29,7 +30,7 @@ export async function initVendas(container) {
         </div>
 
         <!-- Nova Venda View -->
-        <div id="nova-venda-view" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+        <div id="nova-venda-view" class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 sm:p-8 transition-all">
           <form id="form-venda" class="space-y-6">
             <!-- Busca de Peça -->
             <div>
@@ -40,7 +41,7 @@ export async function initVendas(container) {
                   id="busca-peca-venda" 
                   placeholder="${t('search')}..." 
                   autocomplete="off"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 >
                 <div id="resultados-busca" class="hidden absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
               </div>
@@ -49,7 +50,7 @@ export async function initVendas(container) {
             <!-- Itens da Venda -->
             <div>
               <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">${t('recent_sales')}</h3>
-              <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm">
                 <div class="overflow-x-auto max-h-96 overflow-y-auto">
                   <table class="w-full">
                     <thead class="bg-gray-50 dark:bg-gray-900/50 sticky top-0">
@@ -76,7 +77,7 @@ export async function initVendas(container) {
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">${t('payment_method')} *</label>
-                <select id="pagamento-venda" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                <select id="pagamento-venda" required class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition">
                   <option value="Dinheiro">${t('cash') || 'Dinheiro'}</option>
                   <option value="M-Pesa">M-Pesa</option>
                   <option value="E-mola">E-mola</option>
@@ -89,7 +90,7 @@ export async function initVendas(container) {
                 <input 
                   type="datetime-local" 
                   id="data-venda" 
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition"
                   required
                 >
               </div>
@@ -99,7 +100,7 @@ export async function initVendas(container) {
                   type="text" 
                   id="cliente-venda" 
                   placeholder="Ex: Toyota Corolla 2015"
-                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                  class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition"
                 >
               </div>
             </div>
@@ -111,28 +112,28 @@ export async function initVendas(container) {
                 type="text" 
                 id="obs-venda" 
                 placeholder="${t('observations')}..."
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                class="w-full px-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition"
               >
             </div>
 
             <!-- Total e Ações -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <div class="text-center sm:text-left">
-                <p class="text-sm text-gray-600 dark:text-gray-400">${t('total')}</p>
-                <p id="total-venda" class="text-3xl font-bold text-primary">R$ 0,00</p>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">${t('total')}</p>
+                <p id="total-venda" class="text-4xl font-extrabold text-primary pt-1">R$ 0,00</p>
               </div>
               <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button 
                   type="button" 
                   id="btn-limpar-venda" 
-                  class="w-full sm:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
+                  class="w-full sm:w-auto px-6 py-3 border border-gray-300 dark:border-gray-600 font-medium rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition"
                 >
                   ${t('clear')}
                 </button>
                 <button 
                   type="submit" 
                   id="btn-finalizar-venda" 
-                  class="w-full sm:w-auto px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition flex items-center justify-center gap-2"
+                  class="w-full sm:w-auto px-8 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-xl transition shadow-lg flex items-center justify-center gap-2 transform disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +147,7 @@ export async function initVendas(container) {
         </div>
 
         <!-- Historico View -->
-        <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div id="historico-venda-view" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           
           <!-- Filtros Robustos -->
           <div class="p-6 border-b border-gray-200 dark:border-gray-700 space-y-4">
@@ -163,7 +164,7 @@ export async function initVendas(container) {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               <div>
                 <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Data Início</label>
                 <input type="date" id="filtro-data-inicio" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
@@ -187,8 +188,18 @@ export async function initVendas(container) {
                   <option value="Cartão de Crédito">Cartão</option>
                 </select>
               </div>
-              <div class="flex items-end">
-                <button id="btn-aplicar-filtros" class="w-full px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition shadow">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Ordenar por</label>
+                <select id="filtro-ordenacao" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
+                  <option value="recentes">Mais Recentes</option>
+                  <option value="antigas">Mais Antigas</option>
+                  <option value="maior_valor">Maior Valor</option>
+                  <option value="mais_vendidos">Maior Quantidade</option>
+                </select>
+              </div>
+              <div class="flex items-end md:col-span-2 lg:col-span-1">
+                <button id="btn-aplicar-filtros" class="w-full px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition shadow-sm flex items-center justify-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                   Aplicar Filtros
                 </button>
               </div>
@@ -721,8 +732,21 @@ export async function initVendas(container) {
           return true;
       });
       
-      // Sort by created_at desc
-      filteredVendas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      const ordenacao = document.getElementById('filtro-ordenacao').value;
+
+      // Sort
+      filteredVendas.sort((a, b) => {
+          if (ordenacao === 'maior_valor') {
+              return b.total - a.total;
+          } else if (ordenacao === 'mais_vendidos') {
+              return b.quantidade - a.quantidade;
+          } else if (ordenacao === 'antigas') {
+              return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          } else {
+              // recentes (padrão)
+              return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          }
+      });
       
       if (filteredVendas.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9">${renderEmptyState('no_records', 'adjust_filters_hint')}</td></tr>`;
