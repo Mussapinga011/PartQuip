@@ -2,12 +2,11 @@
 import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
-import { notifyFornecedorCreated } from '../lib/notifications.js';
 import { supabaseHelpers } from '../lib/supabase.js';
 
 export async function initFornecedores(container) {
   try {
-    const fornecedores = await dbOperations.getAll('fornecedores');
+    let fornecedores = await dbOperations.getAll('fornecedores');
     
     container.innerHTML = `
       <div class="space-y-6">
@@ -119,10 +118,6 @@ export async function initFornecedores(container) {
           await dbOperations.add('fornecedores', data);
           await syncQueue.add('insert', 'fornecedores', data);
           
-          const user = await supabaseHelpers.getCurrentUser();
-          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
-          notifyFornecedorCreated(userName, data.nome);
-          
           showToast('Fornecedor cadastrado com sucesso!', 'success');
         }
         
@@ -139,16 +134,29 @@ export async function initFornecedores(container) {
 
     // Search functionality
     const searchInput = document.getElementById('busca-fornecedor');
-    searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase().trim();
+    
+    function applySearchAndRender() {
+      const term = searchInput.value.toLowerCase().trim();
       const filtered = fornecedores.filter(f => 
         f.nome.toLowerCase().includes(term) || 
         (f.email && f.email.toLowerCase().includes(term)) ||
         (f.telefone && f.telefone.toLowerCase().includes(term))
       );
       document.getElementById('fornecedores-grid').innerHTML = renderFornecedores(filtered);
-      setupEditDeleteHandlers(container, fornecedores); // Re-attach handlers to new elements
-    });
+      setupEditDeleteHandlers(container, filtered);
+    }
+
+    searchInput.addEventListener('input', applySearchAndRender);
+
+    // Expose non-disruptive refresh logic
+    window.refreshCurrentPageData = async () => {
+        try {
+            fornecedores = await dbOperations.getAll('fornecedores');
+            applySearchAndRender();
+        } catch(error) {
+            console.error('Error refreshing fornecedores data:', error);
+        }
+    };
 
     // Setup edit and delete handlers
     setupEditDeleteHandlers(container, fornecedores);

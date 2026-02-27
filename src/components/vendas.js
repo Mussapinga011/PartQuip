@@ -4,7 +4,6 @@ import { generateId, formatCurrency, formatDate, showToast, confirm } from '../u
 import { renderEmptyState } from '../utils/ui-helpers.js';
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
-import { notifyVendaCreated, notifyEstoqueBaixo } from '../lib/notifications.js';
 import { generatePDF } from '../utils/pdfHelper.js';
 
 export async function initVendas(container) {
@@ -596,16 +595,10 @@ export async function initVendas(container) {
             await dbOperations.put('pecas', peca);
             await syncQueue.add('update', 'pecas', peca);
 
-            // Check for low stock notification
-            if (peca.stock_atual < peca.stock_minimo) {
-              notifyEstoqueBaixo(peca.nome, peca.stock_atual);
             }
           }
 
-          notifyVendaCreated(vendedorNome, item.quantidade, item.nome);
-        }
-
-        showToast(t('sale_finish_success')?.replace('{number}', numeroVenda) || `Venda ${numeroVenda} finalizada com sucesso!`, 'success');
+          showToast(t('sale_finish_success')?.replace('{number}', numeroVenda) || `Venda ${numeroVenda} finalizada com sucesso!`, 'success');
         
         // Reset form
         itensVenda = [];

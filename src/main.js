@@ -71,10 +71,23 @@ async function init() {
         const { storeName } = e.detail;
         console.log(`Data changed in ${storeName}, refreshing current page: ${currentPage}`);
         
-        // Refresh certain pages automatically
-        const autoRefreshPages = ['dashboard', 'pecas', 'fornecedores', 'abastecimento', 'hierarquia'];
-        if (autoRefreshPages.includes(currentPage)) {
-          loadPage(currentPage, true); // Silent refresh
+        // Check if any modal is open to prevent disrupting the user
+        const isModalOpen = document.querySelectorAll('[id^="modal-"]:not(.hidden)').length > 0;
+        
+        if (isModalOpen) {
+           console.log('Modals are open, skipping automatic UI refresh to avoid disrupting user input.');
+           return;
+        }
+
+        // Try the new non-disruptive refresh method first
+        if (typeof window.refreshCurrentPageData === 'function') {
+           window.refreshCurrentPageData();
+        } else {
+           // Fallback for pages that haven't been updated to the new method yet
+           const autoRefreshPages = ['dashboard', 'abastecimento', 'hierarquia'];
+           if (autoRefreshPages.includes(currentPage)) {
+             loadPage(currentPage, true); // Silent refresh (legacy)
+           }
         }
       });
       applyTranslations();
@@ -198,11 +211,28 @@ function showApp() {
 }
 
 // Handle login
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+const loginForm = document.getElementById('login-form');
+const passwordInput = document.getElementById('password');
+const togglePasswordBtn = document.getElementById('toggle-password');
+const eyeIcon = document.getElementById('eye-icon');
+const eyeOffIcon = document.getElementById('eye-off-icon');
+
+if (togglePasswordBtn && passwordInput) {
+  togglePasswordBtn.addEventListener('click', () => {
+    const isPassword = passwordInput.type === 'password';
+    passwordInput.type = isPassword ? 'text' : 'password';
+    
+    // Toggle icons
+    eyeIcon.classList.toggle('hidden', !isPassword);
+    eyeOffIcon.classList.toggle('hidden', isPassword);
+  });
+}
+
+loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   
   const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
+  const password = passwordInput.value;
   const errorEl = document.getElementById('login-error');
   
   try {

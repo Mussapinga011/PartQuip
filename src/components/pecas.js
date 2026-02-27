@@ -2,16 +2,15 @@ import { dbOperations, syncQueue } from '../lib/db.js';
 import { generateId, formatCurrency, showToast, confirm } from '../utils/helpers.js';
 import { t } from '../lib/i18n.js';
 import { searchService } from '../lib/search.js';
-import { notifyPecaCreated, notifyPecaUpdated, notifyPecaDeleted } from '../lib/notifications.js';
 import { supabaseHelpers } from '../lib/supabase.js';
 import { renderEmptyState } from '../utils/ui-helpers.js';
 import { generatePDF } from '../utils/pdfHelper.js';
 export async function initPecas(container) {
   try {
-    const pecas = await dbOperations.getAll('pecas');
-    const categorias = await dbOperations.getAll('categorias');
-    const tipos = await dbOperations.getAll('tipos');
-    const fornecedores = await dbOperations.getAll('fornecedores');
+    let pecas = await dbOperations.getAll('pecas');
+    let categorias = await dbOperations.getAll('categorias');
+    let tipos = await dbOperations.getAll('tipos');
+    let fornecedores = await dbOperations.getAll('fornecedores');
     
     container.innerHTML = `
       <div class="space-y-6">
@@ -192,6 +191,28 @@ export async function initPecas(container) {
       setupEditDeleteHandlers(container, filtered, categorias, tipos, fornecedores);
     }
 
+    // Expose non-disruptive refresh logic
+    window.refreshCurrentPageData = async () => {
+       try {
+         // Re-fetch data from local IndexedDB (which was updated by Realtime)
+         pecas = await dbOperations.getAll('pecas');
+         categorias = await dbOperations.getAll('categorias');
+         tipos = await dbOperations.getAll('tipos');
+         fornecedores = await dbOperations.getAll('fornecedores');
+         
+         // Re-apply current filters to the newly fetched data
+         applyFilters();
+         
+         // Update the total count badge
+         const titleBadge = container.querySelector('h2 + span');
+         if (titleBadge) {
+             titleBadge.textContent = `${pecas.length} itens`;
+         }
+       } catch (error) {
+           console.error('Error refreshing pecas data:', error);
+       }
+    };
+
     document.getElementById('btn-export-pecas').addEventListener('click', () => {
       const table = container.querySelector('table');
       if (table) {
@@ -340,10 +361,6 @@ export async function initPecas(container) {
           await dbOperations.put('pecas', updatedPeca);
           await syncQueue.add('update', 'pecas', updatedPeca);
           
-          const user = await supabaseHelpers.getCurrentUser();
-          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
-          notifyPecaUpdated(userName, pecaData.nome);
-          
           showToast(t('update_success') || 'Peça atualizada com sucesso!', 'success');
         } else {
           const newPeca = {
@@ -353,10 +370,6 @@ export async function initPecas(container) {
           };
           await dbOperations.add('pecas', newPeca);
           await syncQueue.add('insert', 'pecas', newPeca);
-          
-          const user = await supabaseHelpers.getCurrentUser();
-          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
-          notifyPecaCreated(userName, pecaData.nome);
           
           showToast(t('save_success') || 'Peça salva com sucesso!', 'success');
         }
@@ -424,10 +437,6 @@ function setupEditDeleteHandlers(container, pecas, categorias, tipos, fornecedor
       try {
         await dbOperations.delete('pecas', pecaId);
         await syncQueue.add('delete', 'pecas', { id: pecaId });
-        
-        const user = await supabaseHelpers.getCurrentUser();
-        const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Sistema';
-        notifyPecaDeleted(userName, peca.nome);
         
         showToast(t('delete_success') || 'Peça excluída com sucesso!', 'success');
         initPecas(container); // Reload

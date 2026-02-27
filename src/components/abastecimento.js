@@ -6,9 +6,9 @@ import { generatePDF } from '../utils/pdfHelper.js';
 
 export async function initAbastecimento(container) {
   try {
-    const pecas = await dbOperations.getAll('pecas');
-    const fornecedores = await dbOperations.getAll('fornecedores');
-    const abastecimentos = await dbOperations.getAll('abastecimentos');
+    let pecas = await dbOperations.getAll('pecas');
+    let fornecedores = await dbOperations.getAll('fornecedores');
+    let abastecimentos = await dbOperations.getAll('abastecimentos');
     
     // Sort abastecimentos by date desc
     abastecimentos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -200,12 +200,26 @@ function setupAbastecimentoHandlers(container, pecas, abastecimentos, fornecedor
 
   [filterSupplier, filterStart, filterEnd].forEach(el => el.addEventListener('change', applyFilters));
 
-  document.getElementById('btn-filter-clear').addEventListener('click', () => {
-    filterSupplier.value = '';
-    filterStart.value = '';
-    filterEnd.value = '';
-    applyFilters();
-  });
+    document.getElementById('btn-filter-clear').addEventListener('click', () => {
+      filterSupplier.value = '';
+      filterStart.value = '';
+      filterEnd.value = '';
+      applyFilters();
+    });
+
+    // Expose non-disruptive refresh logic
+    window.refreshCurrentPageData = async () => {
+        try {
+            pecas = await dbOperations.getAll('pecas');
+            fornecedores = await dbOperations.getAll('fornecedores');
+            abastecimentos = await dbOperations.getAll('abastecimentos');
+            abastecimentos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            applyFilters();
+        } catch(error) {
+            console.error('Error refreshing abastecimento data:', error);
+        }
+    };
 
   // Export PDF
   document.getElementById('btn-export-abastecimento').addEventListener('click', () => {

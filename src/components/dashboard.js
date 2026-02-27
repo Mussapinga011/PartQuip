@@ -83,6 +83,11 @@ function renderTemplate(container) {
       generatePDF(content, 'dashboard', t('dashboard'));
     }
   });
+
+  // Expose non-disruptive refresh logic
+  window.refreshCurrentPageData = async () => {
+    await refreshDashboard();
+  };
 }
 
 async function refreshDashboard() {

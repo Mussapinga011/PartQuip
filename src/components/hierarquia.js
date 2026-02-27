@@ -5,8 +5,8 @@ import { t } from '../lib/i18n.js';
 
 export async function initHierarquia(container) {
   try {
-    const categorias = await dbOperations.getAll('categorias');
-    const tipos = await dbOperations.getAll('tipos');
+    let categorias = await dbOperations.getAll('categorias');
+    let tipos = await dbOperations.getAll('tipos');
     
     container.innerHTML = `
       <div class="space-y-6">
@@ -209,6 +209,23 @@ export async function initHierarquia(container) {
 
     // Setup edit/delete handlers
     setupEditDeleteHandlers(container, categorias, tipos);
+
+    // Expose non-disruptive refresh logic
+    window.refreshCurrentPageData = async () => {
+        try {
+            categorias = await dbOperations.getAll('categorias');
+            tipos = await dbOperations.getAll('tipos');
+            
+            // Re-render sections
+            document.getElementById('categorias-grid').innerHTML = renderCategorias(categorias, tipos);
+            document.getElementById('tipos-tbody').innerHTML = renderTipos(tipos, categorias);
+            
+            // Re-attach handlers to new elements
+            setupEditDeleteHandlers(container, categorias, tipos);
+        } catch(error) {
+            console.error('Error refreshing hierarquia data:', error);
+        }
+    };
 
   } catch (error) {
     console.error('Hierarquia error:', error);

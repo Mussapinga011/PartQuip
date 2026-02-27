@@ -75,7 +75,7 @@ export function initRealtime(onDataChange) {
           if (onDataChange) onDataChange(storeName, eventType, newRecord);
           
           // Show non-intrusive notification for certain tables
-          // notifyActivity(storeName, eventType, newRecord);
+          notifyActivity(storeName, eventType, newRecord);
           break;
 
         case 'DELETE':
@@ -103,18 +103,28 @@ export function initRealtime(onDataChange) {
 /**
  * Utility to notify user of remote changes
  */
-/*
 function notifyActivity(store, event, record) {
-  // We only notify for important changes from OTHER users
-  // (Assuming we might filter by user_id here)
-  
+  // We only notify for important changes
+  const pecaNome = record.nome || record.peca_nome || 'Item';
+  const codigo = record.codigo || record.peca_codigo || '';
+
   if (store === 'vendas' && event === 'INSERT') {
-    addNotification('success', `Nova venda registrada em tempo real: ${record.quantidade} unidades.`);
+    addNotification('success', `Nova venda registrada: ${record.quantidade}x ${pecaNome}`);
   } else if (store === 'pecas' && event === 'UPDATE') {
-    addNotification('info', `Estoque da peça ${record.codigo} foi atualizado remotamente.`);
+    addNotification('info', `Peça atualizada: ${codigo} - ${pecaNome}`);
+    
+    // Global Low Stock Alert
+    if (record.stock_atual < record.stock_minimo) {
+      addNotification('warning', `⚠️ Estoque baixo: ${pecaNome} (${record.stock_atual} unidades)`);
+    }
+  } else if (store === 'pecas' && event === 'INSERT') {
+    addNotification('success', `Nova peça cadastrada: ${codigo} - ${pecaNome}`);
+  } else if (store === 'fornecedores' && event === 'INSERT') {
+    addNotification('success', `Novo fornecedor: ${record.nome}`);
+  } else if (store === 'abastecimentos' && event === 'INSERT') {
+    addNotification('success', `Entrada de estoque: +${record.quantidade}x ${pecaNome}`);
   }
 }
-*/
 
 /**
  * Stop Real-time Subscriptions
