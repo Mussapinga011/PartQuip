@@ -42,14 +42,14 @@ export function initRealtime(onDataChange) {
           setTimeout(() => {
             stopRealtime();
             initRealtime(onDataChange);
-          }, 2000 * reconnectAttempts); // Exponential backoff
+          }, 2000 * reconnectAttempts);
         } else {
           console.error('❌ Max reconnect attempts reached. Realtime disabled.');
           addNotification('warning', 'Sincronização em tempo real desativada. Os dados serão atualizados periodicamente.');
         }
-      } else if (status === 'CLOSED') {
-        console.log('📡 Real-time connection closed');
-        setRealtimeStatus(false);
+      } else if (status === 'SUBSCRIBED') {
+        // Optional: show a small toast or just log
+        console.log('✅ Real-time Subscriptions active');
       }
     });
 
@@ -57,45 +57,32 @@ export function initRealtime(onDataChange) {
   async function handleRealtimeUpdate(payload) {
     const { eventType, table, new: newRecord, old: oldRecord } = payload;
     
-    // Vendas table is now unified (no more yearly partitions)
-    let storeName = table;
+    console.log(`[Realtime Event] ${eventType} on ${table}`, payload);
 
-    // 2. We skip updates that we triggered ourselves (simplified logic)
-    // In a production app, we would use a local source ID to ignore our own updates
+    let storeName = table;
     
     try {
       switch (eventType) {
         case 'INSERT':
         case 'UPDATE':
-          // Upsert into IndexedDB
           await dbOperations.put(storeName, newRecord);
-          console.log(`[Realtime] ${eventType} in ${table}:`, newRecord.id);
-          
-          // Trigger UI update if callback exists
           if (onDataChange) onDataChange(storeName, eventType, newRecord);
-          
-          // Show non-intrusive notification for certain tables
+          // NEW: Ensure we ALWAYS try to notify, even if it's a minimal record
           notifyActivity(storeName, eventType, newRecord);
           break;
 
         case 'DELETE':
-          // Remove from IndexedDB
           await dbOperations.delete(storeName, oldRecord.id);
-          console.log(`[Realtime] DELETE in ${table}:`, oldRecord.id);
-          
-          // Trigger UI update
           if (onDataChange) onDataChange(storeName, eventType, oldRecord);
           break;
       }
 
-      // Dispatch a global event so any component can listen for data changes
       window.dispatchEvent(new CustomEvent('dataChanged', { 
         detail: { storeName, eventType, record: newRecord || oldRecord } 
       }));
 
     } catch (error) {
       console.error('[Realtime] Error processing update:', error);
-      console.error('[Realtime] Failed payload:', { eventType, table, newRecord, oldRecord });
     }
   }
 }
@@ -104,25 +91,33 @@ export function initRealtime(onDataChange) {
  * Utility to notify user of remote changes
  */
 function notifyActivity(store, event, record) {
-  // We only notify for important changes
-  const pecaNome = record.nome || record.peca_nome || 'Item';
-  const codigo = record.codigo || record.peca_codigo || '';
+  // Defensive check
+  if (!record) return;
 
+  const pecaNome = record.nome || record.peca_nome || '';
+  const codigo = record.codigo || record.peca_codigo || '';
+  const identificador = codigo ? `${codigo} - ${pecaNome}` : pecaNome;
+
+  // IMPORTANT: Supabase Realtime packet might not include all columns 
+  // if Full Replica Identity is not set. We'll show what we have.
+  
   if (store === 'vendas' && event === 'INSERT') {
-    addNotification('success', `Nova venda registrada: ${record.quantidade}x ${pecaNome}`);
+    addNotification('success', `Nova venda: ${record.quantidade || 1}x ${identificador || 'Item'}`);
   } else if (store === 'pecas' && event === 'UPDATE') {
-    addNotification('info', `Peça atualizada: ${codigo} - ${pecaNome}`);
+    addNotification('info', `Peça modificada: ${identificador}`);
     
-    // Global Low Stock Alert
-    if (record.stock_atual < record.stock_minimo) {
-      addNotification('warning', `⚠️ Estoque baixo: ${pecaNome} (${record.stock_atual} unidades)`);
+    // Low Stock Alert
+    if (record.stock_atual !== undefined && record.stock_minimo !== undefined) {
+      if (record.stock_atual < record.stock_minimo) {
+        addNotification('warning', `⚠️ Estoque baixo: ${identificador} (${record.stock_atual})`);
+      }
     }
   } else if (store === 'pecas' && event === 'INSERT') {
-    addNotification('success', `Nova peça cadastrada: ${codigo} - ${pecaNome}`);
+    addNotification('success', `Nova peça: ${identificador}`);
   } else if (store === 'fornecedores' && event === 'INSERT') {
-    addNotification('success', `Novo fornecedor: ${record.nome}`);
+    addNotification('success', `Novo fornecedor: ${record.nome || 'Registrado'}`);
   } else if (store === 'abastecimentos' && event === 'INSERT') {
-    addNotification('success', `Entrada de estoque: +${record.quantidade}x ${pecaNome}`);
+    addNotification('success', `Estoque reforçado: +${record.quantidade || 0}x ${identificador}`);
   }
 }
 
